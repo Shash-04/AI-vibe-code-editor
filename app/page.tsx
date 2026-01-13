@@ -1,8 +1,12 @@
 import Image from "next/image";
 import { db } from "@/lib/db";
+import UserButton from "@/modules/auth/components/user-button";
 
 export default async function Home() {
   return ( 
-    <div className=" text-4xl bg-fuchsia-400">BCCL IPO 1K CRORE ISSUE SIZE 21-23</div>
+    <div className=" flex flex-col justify-center items-center h-screen">
+      <UserButton />
+    </div>
   );
 }
+  
