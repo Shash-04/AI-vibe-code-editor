@@ -21,6 +21,9 @@ export default function Home() {
                     Vibe Code With Intelligence
                 </h1>
             </div>
+            <p className="mt-2 text-lg text-center text-gray-600 dark:text-gray-400 px-5 max-w-2xl">
+                A smart, high-performance code editor that streamlines writing, debugging, and optimization - all in one seamless experience.
+            </p>
             <Link
                 href="/dashboard"
                 className="
