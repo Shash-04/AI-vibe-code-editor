@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { currentUser } from "@/modules/auth/actions";
+import { create } from "domain";
 import { revalidatePath } from "next/cache";
 
 export const toggleStarMarked = async (
@@ -127,28 +128,38 @@ export const editProjectById = async (
 
 export const duplicateProjectById = async (id: string) => {
     try {
+        // 1. Fetch the original playground including its template files
         const originalPlayground = await db.playground.findUnique({
             where: { id },
-            // todo: add tempalte files
+            include: {
+                templateFiles: true,
+            },
         });
+
         if (!originalPlayground) {
             throw new Error("Original playground not found");
         }
 
+        // 2. Create the new playground and nested template files in one transaction
         const duplicatedPlayground = await db.playground.create({
             data: {
                 title: `${originalPlayground.title} (Copy)`,
                 description: originalPlayground.description,
                 template: originalPlayground.template,
                 userId: originalPlayground.userId,
-
-                // todo: add template files
+                // Map through the array to create new records
+                templateFiles: {
+                    create: originalPlayground.templateFiles.map((file) => ({
+                        content: file.content as any,
+                    })),
+                },
             },
         });
 
         revalidatePath("/dashboard");
-        return duplicatedPlayground;
+        // return duplicatedPlayground;
     } catch (error) {
         console.error("Error duplicating project:", error);
+        // return null;
     }
 };

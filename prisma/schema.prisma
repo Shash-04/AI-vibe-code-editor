@@ -27,8 +27,8 @@ model User {
   accounts Account[]
   role     UserRole  @default(USER)
 
-  myPlaground      Playground[]
-  staredPlayground StarMark[]
+  myPlayground      Playground[]
+  starredPlayground StarMark[]
   chatMessages     ChatMessage[]
 
   createdAt DateTime @default(now())
