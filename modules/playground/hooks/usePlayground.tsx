@@ -20,7 +20,9 @@ interface UsePlaygroundReturn {
 }
 
 export const usePlayground = (id: string): UsePlaygroundReturn => {
-    const [playgroundData, setPlaygroundData] = useState<PlaygroundData | null>(null);
+    const [playgroundData, setPlaygroundData] = useState<PlaygroundData | null>(
+        null
+    );
     const [templateData, setTemplateData] = useState<TemplateFolder | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -44,6 +46,8 @@ export const usePlayground = (id: string): UsePlaygroundReturn => {
                 toast.success("playground loaded successfully");
                 return;
             }
+
+            //   load template from api if not in saved content
 
             const res = await fetch(`/api/template/${id}`);
 
