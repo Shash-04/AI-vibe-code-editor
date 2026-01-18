@@ -205,8 +205,12 @@ const WebContainerPreview = ({
             "🚀 Starting development server...\r\n"
           );
         }
-
-        const startProcess = await instance.spawn("npm", ["run", "start"]);
+        //CHATGPT
+        const startProcess = await instance.spawn(
+          "npm",
+          ["run", "dev", "--", "-H", "0.0.0.0", "-p", "3000"],
+          { cwd: "/" }
+        );
 
         instance.on("server-ready", (port: number, url: string) => {
           if (terminalRef.current?.writeToTerminal) {

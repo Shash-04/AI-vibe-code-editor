@@ -38,7 +38,12 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                                 tokenType: account.token_type,
                                 scope: account.scope,
                                 idToken: account.id_token,
-                                sessionState: account.session_state,
+                                //CHATGPT
+                                //CHATGPT
+                                sessionState:
+                                    typeof account.session_state === "string"
+                                        ? account.session_state
+                                        : null,
                             },
                         },
                     },
