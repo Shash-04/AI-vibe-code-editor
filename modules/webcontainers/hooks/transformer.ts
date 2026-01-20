@@ -18,59 +18,53 @@ interface WebContainerDirectory {
     };
 }
 
-type WebContainerFileSystem = Record<string, WebContainerFile | WebContainerDirectory>;
+type WebContainerFileSystem = Record<
+    string,
+    WebContainerFile | WebContainerDirectory
+>;
 
-export function transformToWebContainerFormat(template: { folderName: string; items: TemplateItem[] }): WebContainerFileSystem {
+export function transformToWebContainerFormat(
+    template: { items: TemplateItem[] }
+): WebContainerFileSystem {
     function processItem(item: TemplateItem): WebContainerFile | WebContainerDirectory {
-        if (item.folderName !== undefined && item.items !== undefined) {
-            // This is a directory
-            const directoryContents: WebContainerFileSystem = {};
+        // ✅ Directory if items exist
+        if (Array.isArray(item.items)) {
+            const directory: WebContainerFileSystem = {};
 
-            item.items.forEach(subItem => {
-                let key: string;
-                if (subItem.folderName !== undefined) {
-                    key = subItem.folderName;
-                } else {
-                    const name = subItem.filename || "";
-                    const ext = subItem.fileExtension;
-                    key = ext ? `${name}.${ext}` : name;
-                }
-                
-                if (key) {
-                    directoryContents[key] = processItem(subItem);
-                }
-            });
+            for (const subItem of item.items) {
+                const key = getItemKey(subItem);
+                directory[key] = processItem(subItem);
+            }
 
-            return {
-                directory: directoryContents
-            };
-        } else {
-            // This is a file
-            return {
-                file: {
-                    contents: item.content || ""
-                }
-            };
+            return { directory };
         }
+
+        // ✅ File
+        return {
+            file: {
+                contents: item.content ?? ""
+            }
+        };
     }
 
-    const result: WebContainerFileSystem = {};
+    function getItemKey(item: TemplateItem): string {
+        if (item.folderName) return item.folderName;
 
-    // Flatten the root folder items so they are at the top level of the WebContainer
-    template.items.forEach(item => {
-        let key: string;
-        if (item.folderName !== undefined) {
-            key = item.folderName;
-        } else {
-            const name = item.filename || "";
-            const ext = item.fileExtension;
-            key = ext ? `${name}.${ext}` : name;
+        if (!item.filename) {
+            throw new Error("File item missing filename");
         }
 
-        if (key) {
-            result[key] = processItem(item);
-        }
-    });
+        return item.fileExtension
+            ? `${item.filename}.${item.fileExtension}`
+            : item.filename;
+    }
 
-    return result;
+    const fs: WebContainerFileSystem = {};
+
+    for (const item of template.items) {
+        const key = getItemKey(item);
+        fs[key] = processItem(item);
+    }
+
+    return fs;
 }
