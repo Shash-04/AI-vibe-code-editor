@@ -159,11 +159,6 @@ export function DashboardSidebar({ initialPlaygroundData }:{ initialPlaygroundDa
                                 })
                             )}
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild tooltip="View all">
-                                    <Link href="/playgrounds">
-                                        <span className="text-sm text-muted-foreground">View all playgrounds</span>
-                                    </Link>
-                                </SidebarMenuButton>
                             </SidebarMenuItem>
                         </SidebarMenu>
                     </SidebarGroupContent>
@@ -171,14 +166,6 @@ export function DashboardSidebar({ initialPlaygroundData }:{ initialPlaygroundDa
             </SidebarContent>
             <SidebarFooter>
                 <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton asChild tooltip="Settings">
-                            <Link href="/settings">
-                                <Settings className="h-4 w-4" />
-                                <span>Settings</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarFooter>
             <SidebarRail />
