@@ -13,18 +13,23 @@ import { cn } from "@/lib/utils";
 import { LogOut, User } from "lucide-react";
 import LogoutButton from "./logout-button";
 import { useCurrentUser } from "../hooks/use-current-user";
+import { ImageFetcher } from "./user-avatar-fetcher";
 
 const UserButton = () => {
 
     const user = useCurrentUser()
-    
+    if (!user) return null;
+
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger>
                 <div className={cn("relative rounded-full")}>
                     <Avatar>
-                        <AvatarImage src={user?.image!} alt={user?.name!} />
+                        <ImageFetcher
+                            src={user.image ?? "/placeholder.svg"}
+                            alt={user.name ?? "User"}
+                        />
                         <AvatarFallback className="bg-red-500">
                             <User className="text-white" />
                         </AvatarFallback>

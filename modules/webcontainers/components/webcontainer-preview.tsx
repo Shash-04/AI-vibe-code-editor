@@ -205,11 +205,33 @@ const WebContainerPreview = ({
             "🚀 Starting development server...\r\n"
           );
         }
-        //CHATGPT
+        
+        // Read package.json to find the correct dev script
+        let devScript = "dev";
+        try {
+          const packageJsonData = await instance.fs.readFile("package.json", "utf-8");
+          const packageJson = JSON.parse(packageJsonData);
+          const scripts = packageJson.scripts || {};
+          if (!scripts.dev && scripts.start) {
+            devScript = "start";
+          }
+        } catch (e) {
+          console.error("Failed to read package.json for script detection", e);
+        }
+
         const startProcess = await instance.spawn(
           "npm",
-          ["run", "dev", "--", "-H", "0.0.0.0", "-p", "3000"],
-          { cwd: "/" }
+          ["run", devScript, "--", "-H", "0.0.0.0"],
+          { 
+            cwd: "/",
+            env: {
+              HOSTNAME: "0.0.0.0",
+              HOST: "0.0.0.0",
+              PORT: "3000",
+              NODE_ENV: "development",
+              BROWSER: "none"
+            }
+          }
         );
 
         instance.on("server-ready", (port: number, url: string) => {

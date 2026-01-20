@@ -389,32 +389,32 @@ const
             }
         }, []);
 
-    useEffect(() => {
-  initializeTerminal();
+        useEffect(() => {
+            initializeTerminal();
 
-  const resizeObserver = new ResizeObserver(() => {
-    if (!fitAddon.current || !terminalRef.current) return;
-    if (terminalRef.current.offsetParent === null) return;
+            const resizeObserver = new ResizeObserver(() => {
+                if (!fitAddon.current || !terminalRef.current) return;
+                if (terminalRef.current.offsetParent === null) return;
 
-    requestAnimationFrame(() => {
-      try {
-        fitAddon.current.fit();
-      } catch {}
-    });
-  });
+                requestAnimationFrame(() => {
+                    try {
+                        fitAddon.current.fit();
+                    } catch { }
+                });
+            });
 
-  if (terminalRef.current) {
-    resizeObserver.observe(terminalRef.current);
-  }
+            if (terminalRef.current) {
+                resizeObserver.observe(terminalRef.current);
+            }
 
-  return () => {
-    resizeObserver.disconnect();
-    currentProcess.current?.kill?.();
-    shellProcess.current?.kill?.();
-    term.current?.dispose();
-    term.current = null;
-  };
-}, [initializeTerminal]);
+            return () => {
+                resizeObserver.disconnect();
+                currentProcess.current?.kill?.();
+                shellProcess.current?.kill?.();
+                term.current?.dispose();
+                term.current = null;
+            };
+        }, [initializeTerminal]);
 
 
         useEffect(() => {

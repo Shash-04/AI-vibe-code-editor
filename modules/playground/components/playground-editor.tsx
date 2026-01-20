@@ -507,18 +507,25 @@ export const PlaygroundEditor = ({
     useEffect(() => {
         return () => {
             if (suggestionTimeoutRef.current) {
-                clearTimeout(suggestionTimeoutRef.current)
+                clearTimeout(suggestionTimeoutRef.current);
             }
+
+            // Inline Completion Providers ARE disposables
             if (inlineCompletionProviderRef.current) {
-                inlineCompletionProviderRef.current.dispose()
-                inlineCompletionProviderRef.current = null
+                inlineCompletionProviderRef.current.dispose();
+                inlineCompletionProviderRef.current = null;
             }
+
+            // FIX: Check if dispose exists before calling it. 
+            // Monaco's addCommand returns a string ID, not a disposable.
             if (tabCommandRef.current) {
-                tabCommandRef.current.dispose()
-                tabCommandRef.current = null
+                if (typeof tabCommandRef.current.dispose === 'function') {
+                    tabCommandRef.current.dispose();
+                }
+                tabCommandRef.current = null;
             }
-        }
-    }, [])
+        };
+    }, []);
 
     return (
         <div className="h-full relative">

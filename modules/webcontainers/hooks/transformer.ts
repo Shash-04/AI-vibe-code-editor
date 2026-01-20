@@ -1,7 +1,7 @@
 interface TemplateItem {
-    filename: string;
-    fileExtension: string;
-    content: string;
+    filename?: string;
+    fileExtension?: string;
+    content?: string;
     folderName?: string;
     items?: TemplateItem[];
 }
@@ -22,15 +22,23 @@ type WebContainerFileSystem = Record<string, WebContainerFile | WebContainerDire
 
 export function transformToWebContainerFormat(template: { folderName: string; items: TemplateItem[] }): WebContainerFileSystem {
     function processItem(item: TemplateItem): WebContainerFile | WebContainerDirectory {
-        if (item.folderName && item.items) {
+        if (item.folderName !== undefined && item.items !== undefined) {
             // This is a directory
             const directoryContents: WebContainerFileSystem = {};
 
             item.items.forEach(subItem => {
-                const key = subItem.fileExtension
-                    ? `${subItem.filename}.${subItem.fileExtension}`
-                    : subItem.folderName!;
-                directoryContents[key] = processItem(subItem);
+                let key: string;
+                if (subItem.folderName !== undefined) {
+                    key = subItem.folderName;
+                } else {
+                    const name = subItem.filename || "";
+                    const ext = subItem.fileExtension;
+                    key = ext ? `${name}.${ext}` : name;
+                }
+                
+                if (key) {
+                    directoryContents[key] = processItem(subItem);
+                }
             });
 
             return {
@@ -40,7 +48,7 @@ export function transformToWebContainerFormat(template: { folderName: string; it
             // This is a file
             return {
                 file: {
-                    contents: item.content
+                    contents: item.content || ""
                 }
             };
         }
@@ -48,12 +56,21 @@ export function transformToWebContainerFormat(template: { folderName: string; it
 
     const result: WebContainerFileSystem = {};
 
+    // Flatten the root folder items so they are at the top level of the WebContainer
     template.items.forEach(item => {
-        const key = item.fileExtension
-            ? `${item.filename}.${item.fileExtension}`
-            : item.folderName!;
-        result[key] = processItem(item);
+        let key: string;
+        if (item.folderName !== undefined) {
+            key = item.folderName;
+        } else {
+            const name = item.filename || "";
+            const ext = item.fileExtension;
+            key = ext ? `${name}.${ext}` : name;
+        }
+
+        if (key) {
+            result[key] = processItem(item);
+        }
     });
 
     return result;
-} 1
+}

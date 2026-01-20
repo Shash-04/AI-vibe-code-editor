@@ -527,7 +527,7 @@ const MainPlaygroundPage = () => {
 
                     {isPreviewVisible && (
                       <>
-                        <ResizableHandle />
+                        {/* <ResizableHandle /> */}
                         <ResizablePanel defaultSize={50}>
                           <WebContainerPreview
                             templateData={templateData}

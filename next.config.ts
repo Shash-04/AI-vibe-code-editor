@@ -1,12 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["*"],
+  transpilePackages: ["@monaco-editor/react", "monaco-editor"],
   images: {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "lh3.googleusercontent.com",
-        pathname: "/**",
+        hostname: "**",
       },
     ],
   },
