@@ -163,117 +163,120 @@ export default function ProjectTable({
 
   return (
     <>
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border rounded-lg overflow-hidden shadow-sm bg-card">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Project / Playground </TableHead>
-              <TableHead>Template</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>User</TableHead>
-              <TableHead className="w-12.5">Actions</TableHead>
+            <TableRow className="hover:bg-transparent border-b-2">
+              <TableHead className="font-semibold text-foreground text-sm">Projects</TableHead>
+              <TableHead className="font-semibold text-foreground text-sm">Template</TableHead>
+              <TableHead className="font-semibold text-foreground text-sm">Created</TableHead>
+              <TableHead className="font-semibold text-foreground text-smff">User</TableHead>
+              <TableHead className="w-12.5 font-semibold text-foreground text-sm">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {projects.map((project) => (
-              <TableRow key={project.id}>
+              <TableRow key={project.id} className="hover:bg-accent/50 transition-colors">
                 <TableCell className="font-medium">
-                  <div className="flex flex-col">
+                  <div className="flex flex-col gap-1">
                     <Link
                       href={`/playground/${project.id}`}
-                      className="hover:underline"
+                      className="hover:underline hover:text-primary transition-colors"
                     >
-                      <span className="font-semibold">{project.title}</span>
-                    </Link>
-                    <span className="text-sm text-gray-500 line-clamp-1">
+                      <span className="font-semibold text-base text-foreground">{project.title}</span>
+                      <span className="text-sm text-muted-foreground line-clamp-1 leading-relaxed">
                       {project.description}
                     </span>
+                    </Link>
                   </div>
                 </TableCell>
                 <TableCell>
                   <Badge
                     variant="outline"
-                    className="bg-[#E93F3F15] text-[#E93F3F] border-[#E93F3F]"
+                    className="bg-[#E93F3F15] text-[#E93F3F] border-[#E93F3F] font-medium px-2.5 py-1"
                   >
                     {project.template}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-muted-foreground font-medium">
                     {format(new Date(project.createdAt), "MMM dd, yyyy")}
                   </span>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full overflow-hidden">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-border/50">
                       <Image
                         src={project.user.image || "/placeholder.svg"}
                         alt={project.user.name || "Image not found"}
-                        width={32}
-                        height={32}
+                        width={36}
+                        height={36}
                         className="object-cover"
                       />
                     </div>
-                    <span className="text-sm">{project.user.name}</span>
+                    <span className="text-sm font-medium text-foreground">{project.user.name}</span>
                   </div>
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-accent/80">
+                        <MoreHorizontal className="h-5 w-5" />
                         <span className="sr-only">Open menu</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuContent align="end" className="w-52">
                       <DropdownMenuItem asChild>
                         <MarkedToggleButton markedForRevision={project.Starmark[0]?.isMarked} id={project.id} />
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link
                           href={`/playground/${project.id}`}
-                          className="flex items-center"
+                          className="flex items-center cursor-pointer"
                         >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Open Project
+                          <Eye className="h-4 w-4 mr-2.5" />
+                          <span className="font-medium">Open Project</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link
                           href={`/playground/${project.id}`}
                           target="_blank"
-                          className="flex items-center"
+                          className="flex items-center cursor-pointer"
                         >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Open in New Tab
+                          <ExternalLink className="h-4 w-4 mr-2.5" />
+                          <span className="font-medium">Open in New Tab</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => handleEditClick(project)}
+                        className="cursor-pointer"
                       >
-                        <Edit3 className="h-4 w-4 mr-2" />
-                        Edit Project
+                        <Edit3 className="h-4 w-4 mr-2.5" />
+                        <span className="font-medium">Edit Project</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handleDuplicateProject(project)}
+                        className="cursor-pointer"
                       >
-                        <Copy className="h-4 w-4 mr-2" />
-                        Duplicate
+                        <Copy className="h-4 w-4 mr-2.5" />
+                        <span className="font-medium">Duplicate</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => copyProjectUrl(project.id)}
+                        className="cursor-pointer"
                       >
-                        <LinkIcon className="h-4 w-4 mr-2" />
-                        Copy URL
+                        <LinkIcon className="h-4 w-4 mr-2.5" />
+                        <span className="font-medium">Copy URL</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => handleDeleteClick(project)}
-                        className="text-destructive focus:text-destructive"
+                        className="text-destructive focus:text-destructive cursor-pointer"
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Project
+                        <Trash2 className="h-4 w-4 mr-2.5" />
+                        <span className="font-medium">Delete Project</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -288,15 +291,15 @@ export default function ProjectTable({
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-106.25">
           <DialogHeader>
-            <DialogTitle>Edit Project</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl font-semibold">Edit Project</DialogTitle>
+            <DialogDescription className="text-base text-muted-foreground">
               Make changes to your project details here. Click save when you're
               done.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title">Project Title</Label>
+          <div className="grid gap-5 py-4">
+            <div className="grid gap-2.5">
+              <Label htmlFor="title" className="text-sm font-semibold text-foreground">Project Title</Label>
               <Input
                 id="title"
                 value={editData.title}
@@ -304,10 +307,11 @@ export default function ProjectTable({
                   setEditData((prev) => ({ ...prev, title: e.target.value }))
                 }
                 placeholder="Enter project title"
+                className="h-10 text-base"
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
+            <div className="grid gap-2.5">
+              <Label htmlFor="description" className="text-sm font-semibold text-foreground">Description</Label>
               <Textarea
                 id="description"
                 value={editData.description}
@@ -319,15 +323,17 @@ export default function ProjectTable({
                 }
                 placeholder="Enter project description"
                 rows={3}
+                className="text-base resize-none"
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => setEditDialogOpen(false)}
               disabled={isLoading}
+              className="font-medium"
             >
               Cancel
             </Button>
@@ -335,6 +341,7 @@ export default function ProjectTable({
               type="button"
               onClick={handleUpdateProject}
               disabled={isLoading || !editData.title.trim()}
+              className="font-medium"
             >
               {isLoading ? "Saving..." : "Save Changes"}
             </Button>
@@ -346,19 +353,19 @@ export default function ProjectTable({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Project</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-xl font-semibold">Delete Project</AlertDialogTitle>
+            <AlertDialogDescription className="text-base text-muted-foreground leading-relaxed">
               Are you sure you want to delete "{selectedProject?.title}"? This
               action cannot be undone. All files and data associated with this
               project will be permanently removed.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel disabled={isLoading} className="font-medium">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteProject}
               disabled={isLoading}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium"
             >
               {isLoading ? "Deleting..." : "Delete Project"}
             </AlertDialogAction>

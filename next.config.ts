@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  reactStrictMode : false,
+  reactStrictMode: false,
+  devIndicators: false,
   allowedDevOrigins: ["*"],
   transpilePackages: ["@monaco-editor/react", "monaco-editor"],
   images: {

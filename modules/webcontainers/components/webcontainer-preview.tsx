@@ -205,7 +205,7 @@ const WebContainerPreview = ({
             "🚀 Starting development server...\r\n"
           );
         }
-        
+
         // Read package.json to find the correct dev script
         let devScript = "dev";
         try {
@@ -222,7 +222,7 @@ const WebContainerPreview = ({
         const startProcess = await instance.spawn(
           "npm",
           ["run", devScript, "--", "-H", "0.0.0.0"],
-          { 
+          {
             cwd: "/",
             env: {
               HOSTNAME: "0.0.0.0",
@@ -301,13 +301,33 @@ const WebContainerPreview = ({
 
   if (error || setupError) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-6 rounded-lg max-w-md">
-          <div className="flex items-center gap-2 mb-3">
-            <XCircle className="h-5 w-5" />
-            <h3 className="font-semibold">Error</h3>
+      <div className="h-full flex items-center justify-center bg-linear-to-br from-zinc-950 to-zinc-900">
+        <div className="bg-linear-to-br from-red-950/40 to-red-900/20 border border-red-800/30 text-red-400 p-8 rounded-2xl max-w-md shadow-2xl backdrop-blur-sm">
+          <div className="flex flex-col items-center text-center gap-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-red-500/20 blur-xl rounded-full"></div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-2xl font-bold text-red-300 uppercase tracking-wider">
+                PLS RELOAD
+              </p>
+              <h3 className="text-xl font-semibold text-red-300">(Error)</h3>
+            </div>
+
+            <div className="w-full h-px bg-linear-to-r from-transparent via-red-700/50 to-transparent"></div>
+
+            <p className="text-sm text-red-200/80 leading-relaxed">
+              {error || setupError || "Only a single WebContainer instance can be booted"}
+            </p>
+
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-all shadow-lg shadow-red-500/20 hover:shadow-red-500/40"
+            >
+              Reload Page
+            </button>
           </div>
-          <p className="text-sm">{error || setupError}</p>
         </div>
       </div>
     );

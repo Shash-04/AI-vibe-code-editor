@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -57,35 +57,38 @@ const lucideIconMap: Record<string, LucideIcon> = {
     // Add any other icons you might use dynamically
 }
 
-export function DashboardSidebar({ initialPlaygroundData }:{ initialPlaygroundData: PlaygroundData[] }) {
+export function DashboardSidebar({ initialPlaygroundData }: { initialPlaygroundData: PlaygroundData[] }) {
     const pathname = usePathname()
     const [starredPlaygrounds, setStarredPlaygrounds] = useState(initialPlaygroundData.filter((p) => p.starred))
     const [recentPlaygrounds, setRecentPlaygrounds] = useState(initialPlaygroundData)
 
+
+    
     return (
-        <Sidebar variant="inset" collapsible="icon" className="border border-r">
+        <Sidebar variant="inset" collapsible="icon" className="border-r border-border/50 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
             <SidebarHeader>
                 <div className="flex items-center gap-2 px-4 py-3 justify-center">
-                    <Image src={"/logo.svg"} alt="logo" height={60} width={60} />
+                    <Link href="/">
+                        <Image src={"/logo.svg"} alt="logo" height={140} width={140} className="transition-transform hover:scale-105" />
+                    </Link>
                 </div>
-
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarMenu>
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild isActive={pathname === "/"} tooltip="Home">
+                            <SidebarMenuButton asChild isActive={pathname === "/"} tooltip="Home" className="font-medium hover:bg-accent/80">
                                 <Link href="/">
-                                    <Home className="h-4 w-4 " />
-                                    <span>Home</span>
+                                    <Home className="h-5 w-5 stroke-2" />
+                                    <span className="text-base">Home</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild isActive={pathname === "/dashboard"} tooltip="Dashboard">
+                            <SidebarMenuButton asChild isActive={pathname === "/dashboard"} tooltip="Dashboard" className="font-medium hover:bg-accent/80">
                                 <Link href="/dashboard">
-                                    <LayoutDashboard className="h-4 w-4" />
-                                    <span>Dashboard</span>
+                                    <LayoutDashboard className="h-5 w-5 stroke-2" />
+                                    <span className="text-base">Dashboard</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -94,18 +97,17 @@ export function DashboardSidebar({ initialPlaygroundData }:{ initialPlaygroundDa
                 </SidebarGroup>
 
                 <SidebarGroup>
-                    <SidebarGroupLabel>
-                        <Star className="h-4 w-4 mr-2" />
+                    <SidebarGroupLabel className="text-sm font-semibold text-foreground/80 px-2 py-2">
+                        <Star className="h-4 w-4 mr-2 stroke-[2.5]" />
                         Starred
                     </SidebarGroupLabel>
                     <SidebarGroupAction title="Add starred playground">
-                        <Plus className="h-4 w-4" />
                     </SidebarGroupAction>
                     <SidebarGroupContent>
                         <SidebarMenu>
 
                             {starredPlaygrounds.length === 0 && recentPlaygrounds.length === 0 ? (
-                                <div className="text-center text-muted-foreground py-4 w-full">Create your playground</div>
+                                <div className="text-center text-muted-foreground font-medium py-6 px-4 w-full text-sm">Create your playground</div>
                             ) : (
                                 starredPlaygrounds.map((playground) => {
                                     const IconComponent = lucideIconMap[playground.icon] || Code2;
@@ -115,10 +117,11 @@ export function DashboardSidebar({ initialPlaygroundData }:{ initialPlaygroundDa
                                                 asChild
                                                 isActive={pathname === `/playground/${playground.id}`}
                                                 tooltip={playground.name}
+                                                className="hover:bg-accent/80"
                                             >
                                                 <Link href={`/playground/${playground.id}`}>
-                                                    {IconComponent && <IconComponent className="h-4 w-4" />}
-                                                    <span>{playground.name}</span>
+                                                    {IconComponent && <IconComponent className="h-5 w-5 stroke-2" />}
+                                                    <span className="font-medium">{playground.name}</span>
                                                 </Link>
                                             </SidebarMenuButton>
                                         </SidebarMenuItem>
@@ -130,12 +133,11 @@ export function DashboardSidebar({ initialPlaygroundData }:{ initialPlaygroundDa
                 </SidebarGroup>
 
                 <SidebarGroup>
-                    <SidebarGroupLabel>
-                        <History className="h-4 w-4 mr-2" />
+                    <SidebarGroupLabel className="text-sm font-semibold text-foreground/80 px-2 py-2">
+                        <History className="h-4 w-4 mr-2 stroke-[2.5]" />
                         Recent
                     </SidebarGroupLabel>
                     <SidebarGroupAction title="Create new playground">
-                        <FolderPlus className="h-4 w-4" />
                     </SidebarGroupAction>
                     <SidebarGroupContent>
                         <SidebarMenu>
@@ -148,10 +150,11 @@ export function DashboardSidebar({ initialPlaygroundData }:{ initialPlaygroundDa
                                                 asChild
                                                 isActive={pathname === `playground/${playground.id}`}
                                                 tooltip={playground.name}
+                                                className="hover:bg-accent/80"
                                             >
                                                 <Link href={`/playground/${playground.id}`}>
-                                                    {IconComponent && <IconComponent className="h-4 w-4" />}
-                                                    <span>{playground.name}</span>
+                                                    {IconComponent && <IconComponent className="h-5 w-5 stroke-2" />}
+                                                    <span className="font-medium">{playground.name}</span>
                                                 </Link>
                                             </SidebarMenuButton>
                                         </SidebarMenuItem>

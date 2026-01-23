@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { Backpack, Home, Layers, LayoutDashboard, LayoutGrid, SkipBack } from "lucide-react";
 import {
     ChevronRight,
     File,
@@ -25,6 +27,7 @@ import {
     SidebarGroupAction,
     SidebarGroupContent,
     SidebarGroupLabel,
+    SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
@@ -40,7 +43,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { Button } from "@/components/ui/button";
-
+import Image from "next/image";
 import RenameFolderDialog from "./dialogs/rename-folder-dialog";
 import NewFolderDialog from "./dialogs/new-folder-dialog";
 import NewFileDialog from "./dialogs/new-file-dialog";
@@ -134,9 +137,29 @@ export function TemplateFileTree({
     };
 
     return (
-        <Sidebar>
+        <Sidebar >
+            <SidebarHeader>
+                <div className="flex items-center px-3 py-3 border-b border-zinc-800/50 bg-zinc-900/20 backdrop-blur-md">
+                    <Link href="/dashboard" className="w-full">
+                        <Button
+                            variant="default"
+                            size="sm"
+                            className="w-full justify-start gap-3
+        bg-blue-600 hover:bg-blue-500
+        text-white
+        rounded-lg
+        transition-colors duration-200"
+                        >
+                            <SkipBack className="h-4 w-4" />
+                            <span className="text-sm font-medium">Back to Dashboard</span>
+                        </Button>
+                    </Link>
+                </div>
+
+            </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
+                    <div></div>
                     <SidebarGroupLabel>{title}</SidebarGroupLabel>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -246,7 +269,7 @@ function TemplateNode({
     onRenameFile,
     onRenameFolder,
 }: TemplateNodeProps) {
-    
+
     const isValidItem = item && typeof item === "object";
     const isFolder = isValidItem && "folderName" in item;
     const [isNewFileDialogOpen, setIsNewFileDialogOpen] = React.useState(false);

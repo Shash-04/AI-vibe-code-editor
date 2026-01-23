@@ -382,7 +382,7 @@ const MainPlaygroundPage = () => {
 
             <div className="flex flex-1 items-center gap-2">
               <div className="flex flex-col flex-1">
-                <h1 className="text-sm font-medium">
+                <h1 className="text-xl font-medium">
                   {playgroundData?.title || "Code Playground"}
                 </h1>
                 <p className="text-xs text-muted-foreground">
@@ -391,7 +391,7 @@ const MainPlaygroundPage = () => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -399,6 +399,7 @@ const MainPlaygroundPage = () => {
                       variant="outline"
                       onClick={() => handleSave()}
                       disabled={!activeFile || !activeFile.hasUnsavedChanges}
+                      className="transition-all hover:bg-blue-50 hover:border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Save className="h-4 w-4" />
                     </Button>
@@ -413,12 +414,16 @@ const MainPlaygroundPage = () => {
                       variant="outline"
                       onClick={handleSaveAll}
                       disabled={!hasUnsavedChanges}
+                      className="transition-all hover:bg-blue-50 hover:border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Save className="h-4 w-4" /> All
+                      <Save className="h-4 w-4" />
+                      <span className="ml-1.5">All</span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Save All (Ctrl+Shift+S)</TooltipContent>
                 </Tooltip>
+
+                <div className="h-5 w-px bg-gray-200 mx-1" />
 
                 <ToggleAI
                   isEnabled={aiSuggestions.isEnabled}
@@ -426,20 +431,30 @@ const MainPlaygroundPage = () => {
                   suggestionLoading={aiSuggestions.isLoading}
                 />
 
+                <div className="h-5 w-px bg-gray-200 mx-1" />
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="outline">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="transition-all hover:bg-gray-50 hover:border-gray-300"
+                    >
                       <Settings className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="min-w-45">
                     <DropdownMenuItem
                       onClick={() => setIsPreviewVisible(!isPreviewVisible)}
+                      className="cursor-pointer"
                     >
                       {isPreviewVisible ? "Hide" : "Show"} Preview
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={closeAllFiles}>
+                    <DropdownMenuItem
+                      onClick={closeAllFiles}
+                      className="cursor-pointer text-red-600 focus:text-red-600"
+                    >
                       Close All Files
                     </DropdownMenuItem>
                   </DropdownMenuContent>

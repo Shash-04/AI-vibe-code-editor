@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function Home() {
     return (
-        <div className="z-20 flex min-h-screen flex-col items-center justify-start px-4 pt-2">
+        <div className="z-20 flex min-h-screen flex-col items-center justify-start px-4 ">
 
             <div className="flex flex-col items-center gap-6 text-center">
                 <Image
