@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import {
     readTemplateStructureFromJson,
     saveTemplateStructureToJson,
