@@ -55,19 +55,12 @@ export const usePlayground = (id: string): UsePlaygroundReturn => {
 
             const templateRes = await res.json();
 
-            if (templateRes.templateJson && Array.isArray(templateRes.templateJson)) {
-                setTemplateData({
-                    folderName: "Root",
-                    items: templateRes.templateJson,
-                });
+            if (templateRes?.templateJson?.items) {
+                setTemplateData(templateRes.templateJson);
             } else {
-                setTemplateData(
-                    templateRes.templateJson || {
-                        folderName: "Root",
-                        items: [],
-                    }
-                );
+                throw new Error("Invalid template JSON structure");
             }
+
             toast.success("Template loaded successfully");
         } catch (error) {
             console.error("Error loading playground:", error);
