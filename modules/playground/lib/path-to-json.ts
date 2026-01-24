@@ -224,34 +224,52 @@ async function processDirectory(
  * @param options - Scanning options
  * @returns Promise resolving when the file has been written
  */
+/**
+ * Saves the template structure to a JSON file.
+ * Adjusted for Vercel/Serverless: If the path is not writable, 
+ * it redirects to the system's temporary directory.
+ */
+
+//VERCEL CHANGE
 export async function saveTemplateStructureToJson(
     templatePath: string,
     outputPath: string,
     options?: ScanOptions
-): Promise<void> {
+): Promise<string> { // Changed return type to string to return the final path used
     try {
-        // Scan the template directory
+        // 1. Scan the template directory
         const templateStructure = await scanTemplateDirectory(templatePath, options);
 
-        // Ensure the output directory exists
-        const outputDir = path.dirname(outputPath);
+        // 2. Resolve the path for Serverless environments
+        let finalPath = outputPath;
+
+        // Vercel/AWS Lambda environment check
+        const isServerless = process.env.VERCEL || process.env.LAMBDA_TASK_ROOT;
+
+        if (isServerless && !outputPath.startsWith('/tmp')) {
+            const fileName = path.basename(outputPath);
+            finalPath = path.join('/tmp', fileName);
+            console.log(`Serverless detected. Redirecting output to: ${finalPath}`);
+        }
+
+        // 3. Ensure the directory exists (only works in /tmp on Vercel)
+        const outputDir = path.dirname(finalPath);
         await fs.promises.mkdir(outputDir, { recursive: true });
 
-        // Write the JSON file
-        const data = await fs.promises.writeFile(
-            outputPath,
+        // 4. Write the JSON file
+        await fs.promises.writeFile(
+            finalPath,
             JSON.stringify(templateStructure, null, 2),
             'utf8'
         );
-        console.log(`Template structure saved to ${outputPath}`);
 
-
+        console.log(`Template structure successfully saved to ${finalPath}`);
+        return finalPath;
 
     } catch (error) {
         throw new Error(`Error saving template structure: ${(error as Error).message}`);
     }
 }
-
 export async function readTemplateStructureFromJson(filePath: string): Promise<TemplateFolder> {
     try {
         const data = await fs.promises.readFile(filePath, 'utf8');
@@ -261,24 +279,3 @@ export async function readTemplateStructureFromJson(filePath: string): Promise<T
     }
 }
 
-/**
- * Example usage:
- * 
- * // Basic usage with default options
- * const templateStructure = await scanTemplateDirectory('./templates/react-app');
- * 
- * // With custom options
- * const customOptions = {
- *   ignoreFiles: ['README.md', 'CHANGELOG.md'],
- *   ignoreFolders: ['docs', 'examples'],
- *   maxFileSize: 500 * 1024 // 500KB
- * };
- * const templateStructure = await scanTemplateDirectory('./templates/react-app', customOptions);
- * 
- * // Saving directly to a JSON file with custom options
- * await saveTemplateStructureToJson(
- *   './templates/react-app', 
- *   './output/react-app-template.json',
- *   customOptions
- * );
- */
