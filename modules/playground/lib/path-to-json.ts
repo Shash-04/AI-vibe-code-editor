@@ -272,10 +272,18 @@ export async function saveTemplateStructureToJson(
 }
 export async function readTemplateStructureFromJson(filePath: string): Promise<TemplateFolder> {
     try {
-        const data = await fs.promises.readFile(filePath, 'utf8');
+        // VERCEL FIX: If we are in serverless and the file isn't found in the provided path, 
+        // check the /tmp directory where saveTemplateStructureToJson likely put it.
+        let finalPath = filePath;
+        const isServerless = process.env.VERCEL || process.env.LAMBDA_TASK_ROOT;
+
+        if (isServerless && !filePath.startsWith('/tmp')) {
+            finalPath = path.join('/tmp', path.basename(filePath));
+        }
+
+        const data = await fs.promises.readFile(finalPath, 'utf8');
         return JSON.parse(data) as TemplateFolder;
     } catch (error) {
         throw new Error(`Error reading template structure: ${(error as Error).message}`);
     }
 }
-
