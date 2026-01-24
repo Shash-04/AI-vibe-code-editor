@@ -10,6 +10,9 @@ import path from "path";
 import fs from "fs/promises";
 import { NextRequest } from "next/server";
 
+import "@/lib/fs-guard"
+
+
 function validateJsonStructure(data: unknown): boolean {
     try {
         JSON.parse(JSON.stringify(data)); // Ensures it's serializable
