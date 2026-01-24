@@ -101,28 +101,27 @@ export async function scanTemplateDirectory(
     };
 
     // Validate the input path
-    if (!templatePath) {
-        throw new Error('Template path is required');
-    }
+    const resolvedPath = path.isAbsolute(templatePath)
+        ? templatePath
+        : path.join(process.cwd(), templatePath);
 
-    // Check if the template path exists
+    // ... (rest of your existing defaultOptions code) ...
+
+    // Change the check to use resolvedPath
     try {
-        const stats = await fs.promises.stat(templatePath);
+        const stats = await fs.promises.stat(resolvedPath);
         if (!stats.isDirectory()) {
-            throw new Error(`'${templatePath}' is not a directory`);
+            throw new Error(`'${resolvedPath}' is not a directory`);
         }
     } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-            throw new Error(`Template directory '${templatePath}' does not exist`);
+            throw new Error(`Template directory '${resolvedPath}' does not exist`);
         }
         throw error;
     }
-
     // Get the folder name from the path
-    const folderName = path.basename(templatePath);
-
-    // Process the directory and return the result
-    return processDirectory(folderName, templatePath, mergedOptions);
+    const folderName = path.basename(resolvedPath);
+    return processDirectory(folderName, resolvedPath, mergedOptions);
 }
 
 /**
