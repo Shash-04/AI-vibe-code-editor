@@ -52,16 +52,20 @@ interface TemplateOption {
 
 const templates: TemplateOption[] = [
   {
-    id: "react",
-    name: "React",
+    id: "hono",
+    name: "Hono",
     description:
-      "A JavaScript library for building user interfaces with component-based architecture",
-    icon: "/react.svg",
-    color: "#61DAFB",
-    popularity: 5,
-    tags: ["UI", "Frontend", "JavaScript"],
-    features: ["Component-Based", "Virtual DOM", "JSX Support"],
-    category: "frontend",
+      "Fast, lightweight, built on Web Standards. Support for any JavaScript runtime.",
+    icon: "/hono.svg",
+    color: "#e36002",
+    popularity: 3,
+    tags: ["Node.js", "TypeScript", "Backend"],
+    features: [
+      "Dependency Injection",
+      "TypeScript Support",
+      "Modular Architecture",
+    ],
+    category: "backend",
   },
   {
     id: "nextjs",
@@ -100,21 +104,18 @@ const templates: TemplateOption[] = [
     category: "frontend",
   },
   {
-    id: "hono",
-    name: "Hono",
+    id: "react",
+    name: "React",
     description:
-      "Fast, lightweight, built on Web Standards. Support for any JavaScript runtime.",
-    icon: "/hono.svg",
-    color: "#e36002",
-    popularity: 3,
-    tags: ["Node.js", "TypeScript", "Backend"],
-    features: [
-      "Dependency Injection",
-      "TypeScript Support",
-      "Modular Architecture",
-    ],
-    category: "backend",
+      "A JavaScript library for building user interfaces with component-based architecture",
+    icon: "/react.svg",
+    color: "#61DAFB",
+    popularity: 5,
+    tags: ["UI", "Frontend", "JavaScript"],
+    features: ["Component-Based", "Virtual DOM", "JSX Support"],
+    category: "frontend",
   },
+
   {
     id: "angular",
     name: "Angular",
@@ -176,21 +177,21 @@ const TemplateSelectionModal = ({
     if (selectedTemplate) {
       const templateMap: Record<
         string,
-        "REACT" | "NEXTJS" | "EXPRESS" | "VUE" | "HONO" | "ANGULAR"
+        "HONO" | "NEXTJS" | "EXPRESS" | "VUE" | "REACT" | "ANGULAR"
       > = {
-        react: "REACT",
+        hono: "HONO",
         nextjs: "NEXTJS",
         express: "EXPRESS",
         vue: "VUE",
-        hono: "HONO",
+        react: "REACT",
         angular: "ANGULAR",
       };
 
       const template = templates.find((t) => t.id === selectedTemplate);
       onSubmit({
-        title:projectName || `New ${template?.name} Project`,
-        template:templateMap[selectedTemplate] || "REACT",
-        description:template?.description
+        title: projectName || `New ${template?.name} Project`,
+        template: templateMap[selectedTemplate] || "REACT",
+        description: template?.description
       })
       onClose();
       // Reset state for next time
@@ -283,10 +284,9 @@ const TemplateSelectionModal = ({
                       <div
                         key={template.id}
                         className={`relative flex p-6 border rounded-lg cursor-pointer transition-all duration-300 hover:scale-[1.02]
-                          ${
-                            selectedTemplate === template.id
-                              ? "border-[#E93F3F]  shadow-[0_0_0_1px_#E93F3F,0_8px_20px_rgba(233,63,63,0.15)]"
-                              : "hover:border-[#E93F3F] shadow-[0_2px_8px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.1)]"
+                          ${selectedTemplate === template.id
+                            ? "border-[#E93F3F]  shadow-[0_0_0_1px_#E93F3F,0_8px_20px_rgba(233,63,63,0.15)]"
+                            : "hover:border-[#E93F3F] shadow-[0_2px_8px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.1)]"
                           }
                           
                           `}
