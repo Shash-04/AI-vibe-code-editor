@@ -2,7 +2,7 @@
 
 ![Vibecode Editor Thumbnail](public/vibe-code-editor-thumbnaail.svg)
 
-**Vibecode Editor** is a blazing-fast, AI-integrated web IDE built entirely in the browser using **Next.js App Router**, **WebContainers**, **Monaco Editor**, and **local LLMs via Ollama**. It offers real-time code execution, an AI-powered chat assistant, and support for multiple tech stacks — all wrapped in a stunning developer-first UI.
+**Vibecode Editor** is a blazing-fast, AI-integrated web IDE built entirely in the browser using **Next.js App Router**, **WebContainers**, **Monaco Editor**, and ** LLMs via llama**. It offers real-time code execution, an AI-powered chat assistant, and support for multiple tech stacks — all wrapped in a stunning developer-first UI.
 
 ---
 
@@ -14,7 +14,7 @@
 - 🧱 **Project Templates** – Choose from React, Next.js, Express, Hono, Vue, or Angular.
 - 🗂️ **Custom File Explorer** – Create, rename, delete, and manage files/folders easily.
 - 🖊️ **Enhanced Monaco Editor** – Syntax highlighting, formatting, keybindings, and AI autocomplete.
-- 💡 **AI Suggestions with Ollama** – Local models give you code completion on `Ctrl + Space` or double `Enter`. Accept with `Tab`.
+- 💡 **AI Suggestions with llama** – Local models give you code completion on `Ctrl + Space` or double `Enter`. Accept with `Tab`.
 - ⚙️ **WebContainers Integration** – Instantly run frontend/backend apps right in the browser.
 - 💻 **Terminal with xterm.js** – Fully interactive embedded terminal experience.
 - 🤖 **AI Chat Assistant** – Share files with the AI and get help, refactors, or explanations.
@@ -30,7 +30,7 @@
 | Language      | TypeScript                                   |
 | Auth          | NextAuth (Google + GitHub OAuth)             |
 | Editor        | Monaco Editor                                |
-| AI Suggestion | Ollama (LLMs running locally via Docker)     |
+| AI Suggestion | llama                                        |
 | Runtime       | WebContainers                                |
 | Terminal      | xterm.js                                     |
 | Database      | MongoDB (via DATABASE_URL)                   |
@@ -72,15 +72,9 @@ DATABASE_URL=your_mongodb_connection_string
 NEXTAUTH_URL=http://localhost:3000
 ```
 
-### 4. Start Local Ollama Model
+### 4. Start llama Model
 
-Make sure [Ollama](https://ollama.com/) and Docker are installed, then run:
-
-```bash
-ollama run codellama
-```
-
-Or use your preferred model that supports code generation.
+Use your preferred model that supports code generation.
 
 ### 5. Run the Development Server
 
@@ -114,7 +108,6 @@ This project is licensed under the [MIT License](LICENSE).
 ## 🙏 Acknowledgements
 
 * [Monaco Editor](https://microsoft.github.io/monaco-editor/)
-* [Ollama](https://ollama.com/) – for offline LLMs
 * [WebContainers](https://webcontainers.io/)
 * [xterm.js](https://xtermjs.org/)
 * [NextAuth.js](https://next-auth.js.org/)
