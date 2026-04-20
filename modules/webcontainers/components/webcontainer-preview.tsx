@@ -224,7 +224,7 @@ const WebContainerPreview = ({
 
         const startProcess = await instance.spawn(
           "npm",
-          ["run", devScript, "--", "-H", "0.0.0.0"],
+          ["run", devScript, "--"],
           {
             cwd: "/",
             env: {
