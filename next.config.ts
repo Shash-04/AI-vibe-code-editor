@@ -5,6 +5,19 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   allowedDevOrigins: ["*"],
   transpilePackages: ["@monaco-editor/react", "monaco-editor"],
+  turbopack: {},
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: [
+          ...(config.watchOptions?.ignored || []),
+          "**/vibecode-starters/**",
+        ],
+      };
+    }
+    return config;
+  },
   images: {
     remotePatterns: [
       {

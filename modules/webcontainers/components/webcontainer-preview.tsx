@@ -29,9 +29,9 @@ const WebContainerPreview = ({
 }: WebContainerPreviewProps) => {
   const [previewUrl, setPreviewUrl] = useState<string>("");
 
-  //CHATGPT
-  //CHATGPT
-  const setupOnceRef = useRef(false);
+  // Track which WebContainer instance we've already set up, so navigating
+  // to a new playground (new instance) correctly re-triggers the setup.
+  const setupDoneForRef = useRef<WebContainer | null>(null);
 
   const [loadingState, setLoadingState] = useState({
     transforming: false,
@@ -66,61 +66,61 @@ const WebContainerPreview = ({
   }, [forceResetup]);
 
   useEffect(() => {
-
-    //CHATGPT
-    //CHATGPT
     const setupContainer = async () => {
+      if (!instance || !templateData) return;
+      if (isSetupComplete || isSetupInProgress) return;
 
-      if (setupOnceRef.current) {
-        return;
-      }
-      setupOnceRef.current = true;
+      // Skip if we already ran setup for this exact instance + templateData combo
+      if (setupDoneForRef.current === instance && previewUrl) return;
 
-
-      if (!instance || isSetupComplete || isSetupInProgress) return;
+      // Mark this instance as being set up
+      setupDoneForRef.current = instance;
 
       try {
         setIsSetupInProgress(true);
         setSetupError(null);
+        setPreviewUrl("");
 
+        // ──────────────────────────────────────────────
+        // STEP 0: Clean up old files & processes
+        // ──────────────────────────────────────────────
         try {
-          const rootFiles = await instance.fs.readdir("/");
-          const packageJsonExists = rootFiles.includes("package.json");
-
-
-          if (packageJsonExists) {
-            // Files are already mounted, just reconnect to existing server
-            if (terminalRef.current?.writeToTerminal) {
-              terminalRef.current.writeToTerminal(
-                "🔄 Reconnecting to existing WebContainer session...\r\n"
-              );
-            }
-
-            instance.on("server-ready", (port: number, url: string) => {
-              if (terminalRef.current?.writeToTerminal) {
-                terminalRef.current.writeToTerminal(
-                  `🌐 Reconnected to server at ${url}\r\n`
-                );
-              }
-
-              setPreviewUrl(url);
-              setLoadingState((prev) => ({
-                ...prev,
-                starting: false,
-                ready: true,
-              }));
-            });
-
-            setCurrentStep(4);
-            setLoadingState((prev) => ({ ...prev, starting: true }));
-            return;
+          if (terminalRef.current?.writeToTerminal) {
+            terminalRef.current.writeToTerminal(
+              "🧹 Cleaning up previous session...\r\n"
+            );
           }
-        } catch (error) { }
 
-        // Step-1 transform data
+          // Kill any running processes by spawning a shell kill
+          try {
+            const killProcess = await instance.spawn("sh", [
+              "-c",
+              "kill -9 $(lsof -t -i) 2>/dev/null; exit 0",
+            ]);
+            await killProcess.exit;
+          } catch (_) {
+            // Ignore errors — there may be nothing to kill
+          }
+
+          // Remove all old files from the filesystem
+          const rootFiles = await instance.fs.readdir("/");
+          for (const file of rootFiles) {
+            try {
+              await instance.fs.rm(`/${file}`, { recursive: true });
+            } catch (_) {
+              // Some system paths may not be removable — that's fine
+            }
+          }
+        } catch (_) {
+          // Container may be fresh with nothing to clean — that's fine
+        }
+
+        // ──────────────────────────────────────────────
+        // STEP 1: Transform template data
+        // ──────────────────────────────────────────────
         setLoadingState((prev) => ({ ...prev, transforming: true }));
         setCurrentStep(1);
-        // Write to terminal
+
         if (terminalRef.current?.writeToTerminal) {
           terminalRef.current.writeToTerminal(
             "🔄 Transforming template data...\r\n"
@@ -136,8 +136,9 @@ const WebContainerPreview = ({
         }));
         setCurrentStep(2);
 
-        //  Step-2 Mount Files
-
+        // ──────────────────────────────────────────────
+        // STEP 2: Mount files
+        // ──────────────────────────────────────────────
         if (terminalRef.current?.writeToTerminal) {
           terminalRef.current.writeToTerminal(
             "📁 Mounting files to WebContainer...\r\n"
@@ -157,8 +158,9 @@ const WebContainerPreview = ({
         }));
         setCurrentStep(3);
 
-        // Step-3 Install dependencies
-
+        // ──────────────────────────────────────────────
+        // STEP 3: Install dependencies
+        // ──────────────────────────────────────────────
         if (terminalRef.current?.writeToTerminal) {
           terminalRef.current.writeToTerminal(
             "📦 Installing dependencies...\r\n"
@@ -198,8 +200,9 @@ const WebContainerPreview = ({
         }));
         setCurrentStep(4);
 
-        // STEP-4 Start The Server
-
+        // ──────────────────────────────────────────────
+        // STEP 4: Start the dev server
+        // ──────────────────────────────────────────────
         if (terminalRef.current?.writeToTerminal) {
           terminalRef.current.writeToTerminal(
             "🚀 Starting development server...\r\n"
@@ -276,7 +279,7 @@ const WebContainerPreview = ({
           ready: false,
         });
       }
-    }
+    };
 
     setupContainer();
   }, [instance, templateData, isSetupComplete, isSetupInProgress]);

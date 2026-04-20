@@ -19,6 +19,7 @@ import {
     FileText,
     Import,
     Loader2,
+    MessageSquare,
     Power,
     PowerOff,
     Braces,
@@ -148,24 +149,25 @@ const ToggleAI: React.FC<ToggleAIProps> = ({
                         </div>
                     </DropdownMenuItem>
 
-                    <DropdownMenuSeparator />
-
-                    <DropdownMenuItem
-                        onClick={() => setIsChatOpen(true)}
-                        className="py-2.5 cursor-pointer"
-                    >
-                        <div className="flex items-center gap-3 w-full">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                                <div className="text-sm font-medium">Open Chat</div>
-                                <div className="text-xs text-muted-foreground">
-                                    Chat with AI assistant
-                                </div>
-                            </div>
-                        </div>
-                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Standalone Chat Button */}
+            <Button
+                id="open-ai-chat-btn"
+                size="sm"
+                variant="outline"
+                className={cn(
+                    "relative gap-2 h-8 px-3 text-sm font-medium transition-all duration-200",
+                    isChatOpen
+                        ? "bg-zinc-900 hover:bg-zinc-800 text-zinc-50 border-zinc-800 dark:bg-zinc-50 dark:hover:bg-zinc-200 dark:text-zinc-900 dark:border-zinc-200"
+                        : "bg-background hover:bg-accent text-foreground border-border"
+                )}
+                onClick={() => setIsChatOpen((prev) => !prev)}
+            >
+                <MessageSquare className="h-4 w-4" />
+                <span>Chat</span>
+            </Button>
 
             <AIChatSidePanel
                 isOpen={isChatOpen}
