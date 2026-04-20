@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/banner.png" alt="VibeCode Banner" width="100%" />
+  <!-- <img src="public/banner.png" alt="VibeCode Banner" width="100%" /> -->
 
   # 🧠 VibeCode Editor
   ### The AI-Powered Web IDE of the Future
@@ -124,6 +124,3 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 
 ---
 
-<div align="center">
-  <sub>Built with ❤️ by the VibeCode Team</sub>
-</div>
