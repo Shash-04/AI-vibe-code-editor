@@ -1,16 +1,18 @@
 {
   "name": "vue-starter",
   "private": true,
+  "type": "module",
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build"
+    "dev": "vite --host",
+    "start": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.3.4"
+    "vue": "^3.4.31"
   },
   "devDependencies": {
-    "core-js": "^3.32.2",
-    "@vue/cli-plugin-babel": "^5.0.8",
-    "@vue/cli-service": "^5.0.8"
+    "@vitejs/plugin-vue": "^5.0.5",
+    "vite": "^5.3.4"
   }
 }
