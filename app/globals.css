@@ -123,3 +123,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Landing hero animations */
+@keyframes vibe-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes vibe-blink {
+  50% { opacity: 0; }
+}

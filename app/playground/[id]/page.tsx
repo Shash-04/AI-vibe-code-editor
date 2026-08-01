@@ -28,7 +28,7 @@ import ToggleAI from "@/modules/playground/components/toggle-ai";
 import { useAISuggestions } from "@/modules/playground/hooks/useAISuggestion";
 import { useFileExplorer } from "@/modules/playground/hooks/useFileExplorer";
 import { usePlayground } from "@/modules/playground/hooks/usePlayground";
-import { findFilePath } from "@/modules/playground/lib";
+import { findFilePath, findFirstFile } from "@/modules/playground/lib";
 import {
   TemplateFile,
   TemplateFolder,
@@ -96,16 +96,38 @@ const MainPlaygroundPage = () => {
   } = useWebContainer({ templateData });
 
   const lastSyncedContent = useRef<Map<string, string>>(new Map());
+  // Ensures we auto-open a default file only once per load, so closing all
+  // files later doesn't keep forcibly reopening one.
+  const hasAutoOpenedRef = useRef(false);
 
   useEffect(() => {
     setPlaygroundId(id);
-  }, [id, setPlaygroundId]);
+
+    // The file-explorer store is a module-level singleton that survives
+    // client-side navigation, so switching playgrounds would otherwise leave
+    // the previous playground's open tabs and template in place. Clear them so
+    // the new playground starts fresh (and the auto-open effect below re-runs).
+    closeAllFiles();
+    setTemplateData(null);
+    hasAutoOpenedRef.current = false;
+  }, [id, setPlaygroundId, closeAllFiles, setTemplateData]);
 
   useEffect(() => {
     if (templateData && !openFiles.length) {
       setTemplateData(templateData);
+
+      // Auto-open the first file so the editor shows content and the
+      // WebContainer preview mounts and boots — otherwise the preview panel
+      // is never rendered until the user manually clicks a file.
+      if (!hasAutoOpenedRef.current) {
+        const firstFile = findFirstFile(templateData);
+        if (firstFile) {
+          openFile(firstFile);
+          hasAutoOpenedRef.current = true;
+        }
+      }
     }
-  }, [templateData, setTemplateData, openFiles.length]);
+  }, [templateData, setTemplateData, openFiles.length, openFile]);
 
   // Create wrapper functions that pass saveTemplateData
   const wrappedHandleAddFile = useCallback(
@@ -545,6 +567,7 @@ const MainPlaygroundPage = () => {
                         {/* <ResizableHandle /> */}
                         <ResizablePanel defaultSize={50}>
                           <WebContainerPreview
+                            key={id}
                             templateData={templateData}
                             instance={instance}
                             writeFileSync={writeFileSync}

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Copy, Trash2, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface TerminalProps {
     webcontainerUrl?: string;
@@ -312,8 +313,12 @@ const
 
             terminal.onData(handleTerminalInput);
 
-            // ✅ SAFE initial fit
+            // ✅ SAFE initial fit — only when the container has a real size,
+            // otherwise xterm computes invalid dimensions and crashes on its
+            // next viewport refresh.
             requestAnimationFrame(() => {
+                const el = terminalRef.current;
+                if (!el || el.clientWidth === 0 || el.clientHeight === 0) return;
                 try {
                     fitAddonInstance.fit();
                 } catch { }
@@ -349,15 +354,32 @@ const
         }, [writePrompt]);
 
         const copyTerminalContent = useCallback(async () => {
-            if (term.current) {
-                const content = term.current.getSelection();
-                if (content) {
-                    try {
-                        await navigator.clipboard.writeText(content);
-                    } catch (error) {
-                        console.error("Failed to copy to clipboard:", error);
-                    }
+            if (!term.current) return;
+
+            // Prefer whatever the user has selected; otherwise copy the whole
+            // scrollback buffer so the button always does something useful.
+            let content = term.current.getSelection();
+            if (!content) {
+                const buffer = term.current.buffer.active;
+                const lines: string[] = [];
+                for (let i = 0; i < buffer.length; i++) {
+                    const line = buffer.getLine(i);
+                    if (line) lines.push(line.translateToString(true));
                 }
+                content = lines.join("\n").replace(/\s+$/, "");
+            }
+
+            if (!content.trim()) {
+                toast.info("Nothing to copy yet");
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(content);
+                toast.success("Terminal output copied to clipboard");
+            } catch (error) {
+                console.error("Failed to copy to clipboard:", error);
+                toast.error("Failed to copy terminal output");
             }
         }, []);
 
@@ -380,6 +402,7 @@ const
                 a.download = `terminal-log-${new Date().toISOString().slice(0, 19)}.txt`;
                 a.click();
                 URL.revokeObjectURL(url);
+                toast.success("Terminal log downloaded");
             }
         }, []);
 
@@ -393,12 +416,29 @@ const
             initializeTerminal();
 
             const resizeObserver = new ResizeObserver(() => {
-                if (!fitAddon.current || !terminalRef.current) return;
-                if (terminalRef.current.offsetParent === null) return;
+                const el = terminalRef.current;
+                if (!fitAddon.current || !el) return;
+                if (el.offsetParent === null) return;
+                if (el.clientWidth === 0 || el.clientHeight === 0) return;
 
                 requestAnimationFrame(() => {
+                    const node = terminalRef.current;
+                    // Re-check inside the frame — the panel may have collapsed to
+                    // 0px between the observer firing and this callback.
+                    if (!fitAddon.current || !term.current || !node) return;
+                    if (node.clientWidth === 0 || node.clientHeight === 0) return;
+
                     try {
                         fitAddon.current.fit();
+                        // Tell the running process the new PTY size so its output
+                        // (line wrapping, TUIs, progress bars) reflows correctly.
+                        const proc = currentProcess.current;
+                        if (proc?.resize && term.current.cols && term.current.rows) {
+                            proc.resize({
+                                cols: term.current.cols,
+                                rows: term.current.rows,
+                            });
+                        }
                     } catch { }
                 });
             });

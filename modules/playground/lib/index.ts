@@ -31,6 +31,27 @@ export function findFilePath(
 
 
 /**
+ * Finds the first file in a template tree (depth-first, preferring files at the
+ * shallowest level). Used to auto-open a file on load so the editor shows
+ * content and the WebContainer preview mounts and boots.
+ */
+export function findFirstFile(folder: TemplateFolder): TemplateFile | null {
+    // Prefer a file at the current level before descending into folders.
+    const fileHere = folder.items.find(
+        (item) => !("folderName" in item)
+    ) as TemplateFile | undefined;
+    if (fileHere) return fileHere;
+
+    for (const item of folder.items) {
+        if ("folderName" in item) {
+            const found = findFirstFile(item);
+            if (found) return found;
+        }
+    }
+    return null;
+}
+
+/**
  * Generates a unique file ID based on file location in folder structure
  * @param file The template file
  * @param rootFolder The root template folder containing all files

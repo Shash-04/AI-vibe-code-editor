@@ -8,6 +8,11 @@ import { Progress } from "@/components/ui/progress";
 import { WebContainer } from "@webcontainer/api";
 import { TemplateFolder } from "@/modules/playground/lib/path-to-json";
 import TerminalComponent from "./terminal";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 interface WebContainerPreviewProps {
   templateData: TemplateFolder;
@@ -47,6 +52,11 @@ const WebContainerPreview = ({
   const [isSetupInProgress, setIsSetupInProgress] = useState(false);
 
   const terminalRef = useRef<any>(null);
+  // Track the running dev-server process and the server-ready subscription so
+  // we can stop the server (freeing its port) and remove the listener when this
+  // preview unmounts or re-runs setup.
+  const devProcessRef = useRef<any>(null);
+  const serverReadyUnsubRef = useRef<(() => void) | null>(null);
 
   // Reset setup state when forceResetup changes
   useEffect(() => {
@@ -85,10 +95,23 @@ const WebContainerPreview = ({
         // STEP 0: Clean up old files & processes
         // ──────────────────────────────────────────────
         try {
+          // Clear logs left over from a previous run/template.
+          terminalRef.current?.clearTerminal?.();
           if (terminalRef.current?.writeToTerminal) {
             terminalRef.current.writeToTerminal(
               "🧹 Cleaning up previous session...\r\n"
             );
+          }
+
+          // Stop a dev server this component may have started earlier so its
+          // port is released before we start a new one.
+          if (devProcessRef.current) {
+            try {
+              devProcessRef.current.kill();
+            } catch (_) {
+              // Already exited — nothing to do.
+            }
+            devProcessRef.current = null;
           }
 
           // Kill any running processes by spawning a shell kill
@@ -236,22 +259,31 @@ const WebContainerPreview = ({
             }
           }
         );
+        devProcessRef.current = startProcess;
 
-        instance.on("server-ready", (port: number, url: string) => {
-          if (terminalRef.current?.writeToTerminal) {
-            terminalRef.current.writeToTerminal(
-              `🌐 Server ready at ${url}\r\n`
-            );
+        // Remove any previous subscription before adding a new one so listeners
+        // don't accumulate on the shared WebContainer instance.
+        serverReadyUnsubRef.current?.();
+        const serverReadyUnsub = instance.on(
+          "server-ready",
+          (port: number, url: string) => {
+            if (terminalRef.current?.writeToTerminal) {
+              terminalRef.current.writeToTerminal(
+                `🌐 Server ready at ${url}\r\n`
+              );
+            }
+            setPreviewUrl(url);
+            setLoadingState((prev) => ({
+              ...prev,
+              starting: false,
+              ready: true,
+            }));
+            setIsSetupComplete(true);
+            setIsSetupInProgress(false);
           }
-          setPreviewUrl(url);
-          setLoadingState((prev) => ({
-            ...prev,
-            starting: false,
-            ready: true,
-          }));
-          setIsSetupComplete(true);
-          setIsSetupInProgress(false);
-        });
+        );
+        serverReadyUnsubRef.current =
+          typeof serverReadyUnsub === "function" ? serverReadyUnsub : null;
 
         // Handle start process output - stream to terminal
         startProcess.output.pipeTo(
@@ -285,7 +317,19 @@ const WebContainerPreview = ({
   }, [instance, templateData, isSetupComplete, isSetupInProgress]);
 
   useEffect(() => {
-    return () => { };
+    return () => {
+      // On unmount (e.g. switching playgrounds), remove the server-ready
+      // listener and stop the dev server so its port is released before the
+      // next template starts one — otherwise the new server hits EADDRINUSE.
+      serverReadyUnsubRef.current?.();
+      serverReadyUnsubRef.current = null;
+      try {
+        devProcessRef.current?.kill?.();
+      } catch (_) {
+        // Already exited.
+      }
+      devProcessRef.current = null;
+    };
   }, []);
 
   if (isLoading) {
@@ -405,22 +449,26 @@ const WebContainerPreview = ({
         </div>
       ) : (
         <div className="h-full flex flex-col">
-          <div className="flex-1">
-            <iframe
-              src={previewUrl}
-              className="w-full h-full border-none"
-              title="WebContainer Preview"
-            />
-          </div>
+          <ResizablePanelGroup direction="vertical" className="h-full">
+            <ResizablePanel defaultSize={65} minSize={20}>
+              <iframe
+                src={previewUrl}
+                className="w-full h-full border-none"
+                title="WebContainer Preview"
+              />
+            </ResizablePanel>
 
-          <div className="h-64 border-t">
-            <TerminalComponent
-              ref={terminalRef}
-              webContainerInstance={instance}
-              theme="dark"
-              className="h-full"
-            />
-          </div>
+            <ResizableHandle withHandle />
+
+            <ResizablePanel defaultSize={35} minSize={10} className="border-t">
+              <TerminalComponent
+                ref={terminalRef}
+                webContainerInstance={instance}
+                theme="dark"
+                className="h-full"
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
       )}
     </div>

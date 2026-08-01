@@ -58,9 +58,9 @@ export const MarkedToggleButton = forwardRef<HTMLButtonElement, MarkedToggleButt
                 {...props}
             >
                 {isMarked ? (
-                    <StarOffIcon size={16} className="text-red-500 h-4 w-4 mr-1" />
+                    <StarOffIcon size={16} className="text-muted-foreground h-4 w-4 mr-1" />
                 ) : (
-                    <StarIcon size={16} className="text-gray-500 h-4 w-4 mr-1" />
+                    <StarIcon size={16} className="text-amber-500 h-4 w-4 mr-1" />
                 )}
                 {children || (isMarked ? "Remove Favourite" : "Add to Favourite")}
             </Button>

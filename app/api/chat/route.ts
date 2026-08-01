@@ -8,20 +8,60 @@ interface ChatMessage {
     content: string;
 }
 
+interface ProjectContext {
+    activeFile?: string | null;
+    activeFileContent?: string | null;
+    openFiles?: string[];
+    files?: string[];
+}
+
 interface ChatRequest {
     message: string;
     history: ChatMessage[];
+    context?: ProjectContext;
 }
 
-async function generateAIResponse(messages: ChatMessage[]): Promise<string> {
-    const systemPrompt = `You are a helpful AI coding assistant. You help developers with:
+function buildContextPrompt(context?: ProjectContext): string {
+    if (!context) return "";
+
+    const parts: string[] = [];
+
+    if (context.files?.length) {
+        parts.push(`Project files:\n${context.files.join("\n")}`);
+    }
+    if (context.openFiles?.length) {
+        parts.push(`Currently open tabs: ${context.openFiles.join(", ")}`);
+    }
+    if (context.activeFile) {
+        parts.push(`The file the user is currently editing: ${context.activeFile}`);
+    }
+    if (context.activeFileContent) {
+        parts.push(
+            `Contents of ${context.activeFile ?? "the active file"}:\n\`\`\`\n${context.activeFileContent}\n\`\`\``
+        );
+    }
+
+    if (!parts.length) return "";
+
+    return `\n\n---\nUse the following context about the user's current project to ground your answer. Refer to files by their paths, and prefer editing the active file unless told otherwise.\n\n${parts.join(
+        "\n\n"
+    )}`;
+}
+
+async function generateAIResponse(
+    messages: ChatMessage[],
+    context?: ProjectContext
+): Promise<string> {
+    const systemPrompt = `You are a helpful AI coding assistant embedded in a web IDE. You help developers with:
 - Code explanations and debugging
-- Best practices and architecture advice  
+- Best practices and architecture advice
 - Writing clean, efficient code
 - Troubleshooting errors
 - Code reviews and optimizations
 
-Always provide clear, practical answers. Use proper code formatting when showing examples.`;
+Always provide clear, practical answers. Use proper code formatting when showing examples.${buildContextPrompt(
+        context
+    )}`;
 
     const fullMessages = [{ role: "system", content: systemPrompt }, ...messages];
 
@@ -66,7 +106,7 @@ Always provide clear, practical answers. Use proper code formatting when showing
 export async function POST(req: NextRequest) {
     try {
         const body: ChatRequest = await req.json();
-        const { message, history = [] } = body;
+        const { message, history = [], context } = body;
 
         // Validate input
         if (!message || typeof message !== "string") {
@@ -97,7 +137,7 @@ export async function POST(req: NextRequest) {
 
         //   Generate ai response
 
-        const aiResponse = await generateAIResponse(messages);
+        const aiResponse = await generateAIResponse(messages, context);
 
 
 

@@ -98,7 +98,7 @@ export function DashboardSidebar({ initialPlaygroundData }: { initialPlaygroundD
 
                 <SidebarGroup>
                     <SidebarGroupLabel className="text-sm font-semibold text-foreground/80 px-2 py-2">
-                        <Star className="h-4 w-4 mr-2 stroke-[2.5]" />
+                        <Star className="h-4 w-4 mr-2 stroke-[2.5] text-amber-500" />
                         Starred
                     </SidebarGroupLabel>
                     <SidebarGroupAction title="Add starred playground">

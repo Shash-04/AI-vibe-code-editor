@@ -36,7 +36,7 @@ export default function HomeLayout({
                     dark:bg-black"
             />
 
-            <main className="relative z-20 w-full pt-0 scale-90 origin-top min-h-screen">
+            <main className="relative z-20 flex min-h-screen w-full items-center py-10">
                 {children}
             </main>
             <Footer />

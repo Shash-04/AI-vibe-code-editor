@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -12,6 +12,7 @@ import {
     Send,
     User,
     Copy,
+    Check,
     X,
     Code,
     Sparkles,
@@ -23,6 +24,9 @@ import {
     Search,
     Filter,
     Download,
+    FileInput,
+    ShieldCheck,
+    Wand2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -41,7 +45,23 @@ import {
     DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import "katex/dist/katex.min.css";
-import Image from "next/image";
+import { useFileExplorer } from "@/modules/playground/hooks/useFileExplorer";
+import { findFilePath } from "@/modules/playground/lib";
+import type { TemplateFolder } from "@/modules/playground/lib/path-to-json";
+
+/** Flattens the template tree into a list of file paths for project context. */
+const listFilePaths = (folder: TemplateFolder | null, prefix = ""): string[] => {
+    if (!folder?.items) return [];
+    const paths: string[] = [];
+    for (const item of folder.items) {
+        if ("folderName" in item) {
+            paths.push(...listFilePaths(item, `${prefix}${item.folderName}/`));
+        } else {
+            paths.push(`${prefix}${item.filename}.${item.fileExtension}`);
+        }
+    }
+    return paths;
+};
 
 interface ChatMessage {
     role: "user" | "assistant";
@@ -58,6 +78,19 @@ interface AIChatSidePanelProps {
     onClose: () => void;
 }
 
+const QUICK_PROMPTS: {
+    text: string;
+    icon: React.ElementType;
+    color: string;
+}[] = [
+    { text: "Review my React component for performance", icon: Code, color: "from-sky-500 to-cyan-400" },
+    { text: "Fix TypeScript compilation errors", icon: RefreshCw, color: "from-rose-500 to-red-500" },
+    { text: "Optimize database query performance", icon: Zap, color: "from-amber-500 to-yellow-400" },
+    { text: "Add comprehensive error handling", icon: Sparkles, color: "from-fuchsia-500 to-purple-500" },
+    { text: "Implement security best practices", icon: ShieldCheck, color: "from-emerald-500 to-teal-400" },
+    { text: "Refactor code for better maintainability", icon: Wand2, color: "from-violet-500 to-indigo-500" },
+];
+
 const MessageTypeIndicator: React.FC<{
     type?: string;
     model?: string;
@@ -66,18 +99,13 @@ const MessageTypeIndicator: React.FC<{
     const getTypeConfig = (type?: string) => {
         switch (type) {
             case "code_review":
-                return { icon: Code, color: "text-blue-400", label: "Code Review", bg: "bg-blue-500/10" };
+                return { icon: Code, color: "text-sky-400", label: "Code Review", bg: "bg-sky-500/10" };
             case "suggestion":
-                return {
-                    icon: Sparkles,
-                    color: "text-purple-400",
-                    label: "Suggestion",
-                    bg: "bg-purple-500/10"
-                };
+                return { icon: Sparkles, color: "text-fuchsia-400", label: "Suggestion", bg: "bg-fuchsia-500/10" };
             case "error_fix":
-                return { icon: RefreshCw, color: "text-red-400", label: "Error Fix", bg: "bg-red-500/10" };
+                return { icon: RefreshCw, color: "text-rose-400", label: "Error Fix", bg: "bg-rose-500/10" };
             case "optimization":
-                return { icon: Zap, color: "text-yellow-400", label: "Optimization", bg: "bg-yellow-500/10" };
+                return { icon: Zap, color: "text-amber-400", label: "Optimization", bg: "bg-amber-500/10" };
             default:
                 return { icon: MessageSquare, color: "text-zinc-400", label: "Chat", bg: "bg-zinc-500/10" };
         }
@@ -87,7 +115,7 @@ const MessageTypeIndicator: React.FC<{
     const Icon = config.icon;
 
     return (
-        <div className="flex items-center justify-between mb-3 pb-2 border-b border-zinc-800/50">
+        <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
             <div className={cn("flex items-center gap-2 px-2 py-1 rounded-md", config.bg)}>
                 <Icon className={cn("h-3.5 w-3.5", config.color)} />
                 <span className={cn("text-xs font-medium", config.color)}>
@@ -100,6 +128,63 @@ const MessageTypeIndicator: React.FC<{
                     {tokens && <span>{tokens.toLocaleString()} tokens</span>}
                 </div>
             )}
+        </div>
+    );
+};
+
+/** A rich code block with a title bar, Copy, and Insert-into-file actions. */
+const CodeBlock: React.FC<{
+    code: string;
+    language: string;
+    onInsert: (code: string) => void;
+}> = ({ code, language, onInsert }) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(code);
+            setCopied(true);
+            toast.success("Code copied");
+            setTimeout(() => setCopied(false), 1500);
+        } catch {
+            toast.error("Failed to copy code");
+        }
+    };
+
+    return (
+        <div className="not-prose my-4 overflow-hidden rounded-xl border border-white/10 bg-zinc-950/80 shadow-lg">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/[0.03]">
+                <div className="flex items-center gap-2">
+                    <div className="flex gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+                    </div>
+                    <span className="ml-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                        {language || "code"}
+                    </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <button
+                        onClick={handleCopy}
+                        className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-zinc-300 hover:text-white hover:bg-white/10 transition-all"
+                    >
+                        {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                        {copied ? "Copied" : "Copy"}
+                    </button>
+                    <button
+                        onClick={() => onInsert(code)}
+                        className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-white bg-linear-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 shadow-sm shadow-fuchsia-500/25 transition-all"
+                        title="Insert this code into the active file"
+                    >
+                        <FileInput className="h-3 w-3" />
+                        Insert
+                    </button>
+                </div>
+            </div>
+            <pre className="text-sm text-zinc-100 overflow-x-auto p-4 leading-relaxed">
+                <code className={`language-${language}`}>{code}</code>
+            </pre>
         </div>
     );
 };
@@ -134,6 +219,32 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
         }, 100);
         return () => clearTimeout(timeoutId);
     }, [messages, isLoading]);
+
+    // Insert a snippet into the currently active editor file. Reads the store
+    // lazily on click so this component doesn't re-render as the user types.
+    const insertIntoActiveFile = useCallback((code: string) => {
+        const { activeFileId, openFiles, updateFileContent } =
+            useFileExplorer.getState();
+
+        if (!activeFileId) {
+            toast.error("Open a file first to insert code into it");
+            return;
+        }
+        const active = openFiles.find((f) => f.id === activeFileId);
+        if (!active) {
+            toast.error("No active file to insert into");
+            return;
+        }
+
+        const base = active.content ?? "";
+        const separator = base.length === 0 || base.endsWith("\n") ? "" : "\n";
+        const newContent = `${base}${separator}${code}\n`;
+
+        updateFileContent(activeFileId, newContent);
+        toast.success(
+            `Inserted into ${active.filename}.${active.fileExtension} — press Ctrl+S to save`
+        );
+    }, []);
 
     const getChatModePrompt = (mode: string, content: string) => {
         switch (mode) {
@@ -176,6 +287,29 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
         try {
             const contextualMessage = getChatModePrompt(chatMode, input.trim());
 
+            // Gather the current editor context so the assistant knows which
+            // file/folder the user is working in and what the project contains.
+            const { activeFileId, openFiles, templateData } =
+                useFileExplorer.getState();
+            const active = openFiles.find((f) => f.id === activeFileId);
+            const activePath =
+                active && templateData
+                    ? findFilePath(active, templateData)
+                    : active
+                    ? `${active.filename}.${active.fileExtension}`
+                    : null;
+
+            const projectContext = {
+                activeFile: activePath,
+                activeFileContent: active?.content
+                    ? active.content.slice(0, 8000)
+                    : null,
+                openFiles: openFiles.map(
+                    (f) => `${f.filename}.${f.fileExtension}`
+                ),
+                files: listFilePaths(templateData).slice(0, 200),
+            };
+
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: {
@@ -187,6 +321,7 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
                         role: msg.role,
                         content: msg.content,
                     })),
+                    context: projectContext,
                     stream: streamResponse,
                     mode: chatMode,
                     model,
@@ -265,13 +400,39 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
             return msg.content.toLowerCase().includes(searchTerm.toLowerCase());
         });
 
+    const markdownComponents = {
+        pre: ({ children }: any) => <>{children}</>,
+        code({ children, className, ...props }: any) {
+            const isBlock = className?.startsWith("language-");
+
+            if (!isBlock) {
+                return (
+                    <code className="bg-white/10 px-1.5 py-0.5 rounded text-[0.85em] font-mono border border-white/10 text-fuchsia-200">
+                        {children}
+                    </code>
+                );
+            }
+
+            const language = className.replace("language-", "");
+            const code = String(children).replace(/\n$/, "");
+
+            return (
+                <CodeBlock
+                    code={code}
+                    language={language}
+                    onInsert={insertIntoActiveFile}
+                />
+            );
+        },
+    };
+
     return (
         <TooltipProvider>
             <>
                 {/* Backdrop */}
                 <div
                     className={cn(
-                        "fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300",
+                        "fixed inset-0 bg-black/70 backdrop-blur-sm z-40 transition-opacity duration-300",
                         isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
                     )}
                     onClick={onClose}
@@ -280,23 +441,32 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
                 {/* Side Panel */}
                 <div
                     className={cn(
-                        "fixed right-0 top-0 h-full w-full max-w-6xl bg-linear-to-br from-zinc-950 via-zinc-950 to-zinc-900 border-l border-zinc-800/50 z-50 flex flex-col transition-transform duration-300 ease-out shadow-2xl",
+                        "fixed right-0 top-0 h-full w-full max-w-6xl z-50 flex flex-col overflow-hidden transition-transform duration-300 ease-out shadow-2xl",
+                        "bg-[#0a0a0f] border-l border-white/10",
                         isOpen ? "translate-x-0" : "translate-x-full"
                     )}
                 >
-                    {/* Enhanced Header */}
-                    <div className="shrink-0 border-b border-zinc-800/50 bg-zinc-900/50 backdrop-blur-xl">
+                    {/* Ambient aurora glow */}
+                    <div className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 h-64 w-[42rem] rounded-full bg-linear-to-r from-violet-600/25 via-fuchsia-600/20 to-cyan-500/25 blur-[100px]" />
+                    <div className="pointer-events-none absolute top-1/3 -right-24 h-72 w-72 rounded-full bg-fuchsia-600/10 blur-[100px]" />
+
+                    {/* Header */}
+                    <div className="relative shrink-0 border-b border-white/10 bg-white/[0.02] backdrop-blur-xl">
                         <div className="flex items-center justify-between px-6 py-5">
                             <div className="flex items-center gap-4">
-                                <div className="relative w-11 h-11 border-2 border-zinc-700/50 rounded-xl bg-linear-to-br from-zinc-800 to-zinc-900 flex items-center justify-center shadow-lg">
-                                    <Image src={"/logo.svg"} alt="Logo" width={28} height={28} />
+                                <div className="relative">
+                                    <div className="absolute -inset-1 rounded-2xl bg-linear-to-br from-violet-500 via-fuchsia-500 to-cyan-400 opacity-60 blur-md animate-pulse" />
+                                    <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-br from-violet-600 via-fuchsia-600 to-cyan-500 shadow-lg">
+                                        <Sparkles className="h-6 w-6 text-white" />
+                                    </div>
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-semibold text-zinc-50 tracking-tight">
+                                    <h2 className="text-lg font-semibold tracking-tight bg-linear-to-r from-violet-200 via-fuchsia-200 to-cyan-200 bg-clip-text text-transparent">
                                         Enhanced AI Assistant
                                     </h2>
-                                    <p className="text-sm text-zinc-400 mt-0.5">
-                                        {messages.length} {messages.length === 1 ? 'message' : 'messages'}
+                                    <p className="mt-0.5 flex items-center gap-1.5 text-sm text-zinc-400">
+                                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px] shadow-emerald-400/60" />
+                                        {messages.length} {messages.length === 1 ? "message" : "messages"}
                                     </p>
                                 </div>
                             </div>
@@ -305,11 +475,10 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
                                     <DropdownMenuTrigger asChild>
                                         <Button
                                             variant="ghost"
-                                            size="lg"
-                                            className=" p-0 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 transition-all"
+                                            size="icon"
+                                            className="text-zinc-400 hover:text-zinc-100 hover:bg-white/10 transition-all"
                                         >
-                                            <Settings size={24} />
-                                            
+                                            <Settings className="h-5 w-5" />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-56">
@@ -330,7 +499,7 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
                                             <Download className="h-4 w-4 mr-2" />
                                             Export Chat
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem 
+                                        <DropdownMenuItem
                                             onClick={() => setMessages([])}
                                             className="text-red-400 focus:text-red-400"
                                         >
@@ -341,16 +510,16 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
 
                                 <Button
                                     variant="ghost"
-                                    size="sm"
+                                    size="icon"
                                     onClick={onClose}
-                                    className="h-9 w-9 p-0 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 transition-all"
+                                    className="text-zinc-400 hover:text-zinc-100 hover:bg-white/10 transition-all"
                                 >
-                                    <X size={256} />
+                                    <X className="h-5 w-5" />
                                 </Button>
                             </div>
                         </div>
 
-                        {/* Enhanced Controls */}
+                        {/* Controls */}
                         <div className="px-6 pb-5">
                             <div className="flex items-center justify-between gap-4">
                                 <Tabs
@@ -358,55 +527,42 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
                                     onValueChange={(value) => setChatMode(value as any)}
                                     className="flex-1"
                                 >
-                                    <TabsList className="grid w-full grid-cols-4 bg-zinc-800/30 p-1">
-                                        <TabsTrigger 
-                                            value="chat" 
-                                            className="flex items-center gap-2 data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-50 transition-all"
-                                        >
-                                            <MessageSquare className="h-3.5 w-3.5" />
-                                            <span className="hidden sm:inline">Chat</span>
-                                        </TabsTrigger>
-                                        <TabsTrigger
-                                            value="review"
-                                            className="flex items-center gap-2 data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-50 transition-all"
-                                        >
-                                            <Code className="h-3.5 w-3.5" />
-                                            <span className="hidden sm:inline">Review</span>
-                                        </TabsTrigger>
-                                        <TabsTrigger 
-                                            value="fix" 
-                                            className="flex items-center gap-2 data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-50 transition-all"
-                                        >
-                                            <RefreshCw className="h-3.5 w-3.5" />
-                                            <span className="hidden sm:inline">Fix</span>
-                                        </TabsTrigger>
-                                        <TabsTrigger
-                                            value="optimize"
-                                            className="flex items-center gap-2 data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-50 transition-all"
-                                        >
-                                            <Zap className="h-3.5 w-3.5" />
-                                            <span className="hidden sm:inline">Optimize</span>
-                                        </TabsTrigger>
+                                    <TabsList className="grid w-full grid-cols-4 gap-1 bg-white/[0.04] p-1 border border-white/5">
+                                        {[
+                                            { v: "chat", icon: MessageSquare, label: "Chat" },
+                                            { v: "review", icon: Code, label: "Review" },
+                                            { v: "fix", icon: RefreshCw, label: "Fix" },
+                                            { v: "optimize", icon: Zap, label: "Optimize" },
+                                        ].map(({ v, icon: Icon, label }) => (
+                                            <TabsTrigger
+                                                key={v}
+                                                value={v}
+                                                className="flex items-center gap-2 text-zinc-400 transition-all data-[state=active]:bg-linear-to-r data-[state=active]:from-violet-600 data-[state=active]:to-fuchsia-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-fuchsia-500/20"
+                                            >
+                                                <Icon className="h-3.5 w-3.5" />
+                                                <span className="hidden sm:inline">{label}</span>
+                                            </TabsTrigger>
+                                        ))}
                                     </TabsList>
                                 </Tabs>
 
                                 <div className="flex items-center gap-2">
                                     <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                                         <Input
                                             placeholder="Search..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="pl-9 h-9 w-44 bg-zinc-800/30 border-zinc-700/50 focus:border-zinc-600 transition-all"
+                                            className="pl-9 h-9 w-44 bg-white/[0.04] border-white/10 focus:border-fuchsia-500/50 transition-all"
                                         />
                                     </div>
 
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm" 
-                                                className="h-9 w-9 p-0 hover:bg-zinc-800/50 transition-all"
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-9 w-9 hover:bg-white/10 transition-all"
                                             >
                                                 <Filter className="h-4 w-4" />
                                             </Button>
@@ -418,19 +574,13 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
                                             <DropdownMenuItem onClick={() => setFilterType("chat")}>
                                                 Chat Only
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                onClick={() => setFilterType("code_review")}
-                                            >
+                                            <DropdownMenuItem onClick={() => setFilterType("code_review")}>
                                                 Code Reviews
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                onClick={() => setFilterType("error_fix")}
-                                            >
+                                            <DropdownMenuItem onClick={() => setFilterType("error_fix")}>
                                                 Error Fixes
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                onClick={() => setFilterType("optimization")}
-                                            >
+                                            <DropdownMenuItem onClick={() => setFilterType("optimization")}>
                                                 Optimizations
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -440,37 +590,35 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
                         </div>
                     </div>
 
-                    {/* Messages Container */}
-                    <div className="flex-1 overflow-y-auto bg-linear-to-b from-zinc-950 to-zinc-900">
+                    {/* Messages */}
+                    <div className="relative flex-1 overflow-y-auto">
                         <div className="p-6 space-y-6">
                             {filteredMessages.length === 0 && !isLoading && (
-                                <div className="text-center text-zinc-500 py-20">
-                                    <div className="relative w-20 h-20 border-2 border-zinc-700/50 rounded-2xl bg-linear-to-br from-zinc-800 to-zinc-900 flex items-center justify-center mx-auto mb-6 shadow-xl">
-                                        <Brain className="h-10 w-10 text-zinc-400" />
+                                <div className="text-center py-16">
+                                    <div className="relative mx-auto mb-6 w-24 h-24">
+                                        <div className="absolute inset-0 rounded-3xl bg-linear-to-br from-violet-500 via-fuchsia-500 to-cyan-400 opacity-40 blur-2xl animate-pulse" />
+                                        <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl bg-linear-to-br from-violet-600/80 via-fuchsia-600/80 to-cyan-500/80 border border-white/10 shadow-xl">
+                                            <Brain className="h-11 w-11 text-white" />
+                                        </div>
                                     </div>
-                                    <h3 className="text-2xl font-semibold mb-2 text-zinc-200">
+                                    <h3 className="text-2xl font-bold mb-2 bg-linear-to-r from-violet-200 via-fuchsia-200 to-cyan-200 bg-clip-text text-transparent">
                                         Enhanced AI Assistant
                                     </h3>
                                     <p className="text-zinc-400 max-w-md mx-auto leading-relaxed mb-8">
-                                        Advanced AI coding assistant with comprehensive analysis
-                                        capabilities
+                                        Advanced AI coding assistant with comprehensive analysis capabilities
                                     </p>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
-                                        {[
-                                            "Review my React component for performance",
-                                            "Fix TypeScript compilation errors",
-                                            "Optimize database query performance",
-                                            "Add comprehensive error handling",
-                                            "Implement security best practices",
-                                            "Refactor code for better maintainability",
-                                        ].map((suggestion) => (
+                                        {QUICK_PROMPTS.map(({ text, icon: Icon, color }) => (
                                             <button
-                                                key={suggestion}
-                                                onClick={() => setInput(suggestion)}
-                                                className="px-4 py-3 bg-zinc-800/40 hover:bg-zinc-700/50 border border-zinc-700/50 hover:border-zinc-600 rounded-xl text-sm text-zinc-300 hover:text-zinc-100 transition-all text-left group"
+                                                key={text}
+                                                onClick={() => setInput(text)}
+                                                className="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm text-zinc-300 transition-all hover:border-white/20 hover:bg-white/[0.06] hover:shadow-lg hover:shadow-fuchsia-500/5"
                                             >
-                                                <span className="group-hover:translate-x-0.5 inline-block transition-transform">
-                                                    {suggestion}
+                                                <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-linear-to-br text-white shadow-sm transition-transform group-hover:scale-110", color)}>
+                                                    <Icon className="h-4 w-4" />
+                                                </span>
+                                                <span className="group-hover:text-zinc-100 transition-colors">
+                                                    {text}
                                                 </span>
                                             </button>
                                         ))}
@@ -487,8 +635,8 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
                                         )}
                                     >
                                         {msg.role === "assistant" && (
-                                            <div className="relative w-10 h-10 border-2 border-zinc-700/50 rounded-xl bg-linear-to-br from-zinc-800 to-zinc-900 flex items-center justify-center shrink-0 shadow-lg">
-                                                <Brain className="h-5 w-5 text-zinc-400" />
+                                            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-violet-600 via-fuchsia-600 to-cyan-500 shadow-lg">
+                                                <Sparkles className="h-5 w-5 text-white" />
                                             </div>
                                         )}
 
@@ -496,8 +644,8 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
                                             className={cn(
                                                 "max-w-[85%] rounded-2xl shadow-lg transition-all",
                                                 msg.role === "user"
-                                                    ? "bg-linear-to-br from-blue-600 to-blue-700 text-white p-4 rounded-br-md"
-                                                    : "bg-zinc-900/60 backdrop-blur-sm text-zinc-100 p-5 rounded-bl-md border border-zinc-800/50"
+                                                    ? "bg-linear-to-br from-violet-600 to-fuchsia-600 text-white p-4 rounded-br-md shadow-fuchsia-500/20"
+                                                    : "bg-white/[0.04] backdrop-blur-sm text-zinc-100 p-5 rounded-bl-md border border-white/10"
                                             )}
                                         >
                                             {msg.role === "assistant" && (
@@ -508,44 +656,22 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
                                                 />
                                             )}
 
-                                            <div className="prose prose-invert prose-sm max-w-none">
+                                            <div className="prose prose-invert prose-sm max-w-none prose-pre:bg-transparent prose-pre:p-0">
                                                 <ReactMarkdown
                                                     remarkPlugins={[remarkGfm, remarkMath]}
                                                     rehypePlugins={[rehypeKatex]}
-                                                    components={{
-                                                        code({ children, className, ...props }) {
-                                                            const isBlock = className?.startsWith("language-");
-
-                                                            if (!isBlock) {
-                                                                return (
-                                                                    <code className="bg-zinc-800/80 px-1.5 py-0.5 rounded text-sm font-mono border border-zinc-700/50">
-                                                                        {children}
-                                                                    </code>
-                                                                );
-                                                            }
-
-                                                            return (
-                                                                <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 my-4 shadow-inner">
-                                                                    <pre className="text-sm text-zinc-100 overflow-x-auto">
-                                                                        <code className={className} {...props}>
-                                                                            {children}
-                                                                        </code>
-                                                                    </pre>
-                                                                </div>
-                                                            );
-                                                        },
-                                                    }}
+                                                    components={markdownComponents}
                                                 >
                                                     {msg.content}
                                                 </ReactMarkdown>
                                             </div>
 
                                             {/* Message actions */}
-                                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-700/30">
+                                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
                                                 <div className="text-xs text-zinc-500 font-medium">
-                                                    {msg.timestamp.toLocaleTimeString([], { 
-                                                        hour: '2-digit', 
-                                                        minute: '2-digit' 
+                                                    {msg.timestamp.toLocaleTimeString([], {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
                                                     })}
                                                 </div>
                                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -560,16 +686,29 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
                                                                 toast.error("Failed to copy message");
                                                             }
                                                         }}
-                                                        className="h-7 w-7 p-0 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50 transition-all"
+                                                        className="h-7 w-7 p-0 text-zinc-400 hover:text-zinc-200 hover:bg-white/10 transition-all"
                                                     >
                                                         <Copy className="h-3.5 w-3.5" />
                                                     </Button>
+
+                                                    {msg.role === "assistant" && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => insertIntoActiveFile(msg.content)}
+                                                            title="Insert entire message into the active file"
+                                                            className="h-7 w-7 p-0 text-zinc-400 hover:text-fuchsia-300 hover:bg-white/10 transition-all"
+                                                        >
+                                                            <FileInput className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    )}
 
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => setInput(msg.content)}
-                                                        className="h-7 w-7 p-0 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50 transition-all"
+                                                        title="Reuse this message as input"
+                                                        className="h-7 w-7 p-0 text-zinc-400 hover:text-zinc-200 hover:bg-white/10 transition-all"
                                                     >
                                                         <RefreshCw className="h-3.5 w-3.5" />
                                                     </Button>
@@ -578,7 +717,7 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
                                         </div>
 
                                         {msg.role === "user" && (
-                                            <Avatar className="h-10 w-10 border-2 border-blue-500/50 bg-linear-to-br from-blue-600 to-blue-700 shrink-0 shadow-lg">
+                                            <Avatar className="h-10 w-10 border border-white/20 bg-linear-to-br from-violet-600 to-fuchsia-600 shrink-0 shadow-lg">
                                                 <AvatarFallback className="bg-transparent text-white">
                                                     <User className="h-5 w-5" />
                                                 </AvatarFallback>
@@ -590,11 +729,11 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
 
                             {isLoading && (
                                 <div className="flex items-start gap-4 justify-start">
-                                    <div className="relative w-10 h-10 border-2 border-zinc-700/50 rounded-xl bg-linear-to-br from-zinc-800 to-zinc-900 flex items-center justify-center shadow-lg">
-                                        <Brain className="h-5 w-5 text-zinc-400" />
+                                    <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-violet-600 via-fuchsia-600 to-cyan-500 shadow-lg">
+                                        <Sparkles className="h-5 w-5 text-white animate-pulse" />
                                     </div>
-                                    <div className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-800/50 p-5 rounded-2xl rounded-bl-md flex items-center gap-3 shadow-lg">
-                                        <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
+                                    <div className="flex items-center gap-3 rounded-2xl rounded-bl-md border border-white/10 bg-white/[0.04] p-5 shadow-lg backdrop-blur-sm">
+                                        <Loader2 className="h-4 w-4 animate-spin text-fuchsia-400" />
                                         <span className="text-sm text-zinc-300">
                                             {chatMode === "review"
                                                 ? "Analyzing code structure and patterns..."
@@ -612,10 +751,10 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
                         </div>
                     </div>
 
-                    {/* Enhanced Input Form */}
+                    {/* Input */}
                     <form
                         onSubmit={handleSendMessage}
-                        className="shrink-0 p-5 border-t border-zinc-800/50 bg-zinc-900/50 backdrop-blur-xl"
+                        className="relative shrink-0 p-5 border-t border-white/10 bg-white/[0.02] backdrop-blur-xl"
                     >
                         <div className="flex items-end gap-3">
                             <div className="flex-1 relative">
@@ -632,24 +771,31 @@ export const AIChatSidePanel: React.FC<AIChatSidePanelProps> = ({
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     onKeyDown={(e) => {
-                                        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                                        // Enter sends; Shift+Enter inserts a newline.
+                                        // Ignore Enter while composing (IME) input.
+                                        if (
+                                            e.key === "Enter" &&
+                                            !e.shiftKey &&
+                                            !e.nativeEvent.isComposing
+                                        ) {
+                                            e.preventDefault();
                                             handleSendMessage(e as any);
                                         }
                                     }}
                                     disabled={isLoading}
-                                    className="min-h-12 max-h-32 bg-zinc-800/30 border-zinc-700/50 text-zinc-100 placeholder-zinc-500 focus:border-blue-500/50 focus:ring-blue-500/20 resize-none pr-24 rounded-xl transition-all"
+                                    className="min-h-12 max-h-32 bg-white/[0.04] border-white/10 text-zinc-100 placeholder-zinc-500 focus:border-fuchsia-500/50 focus:ring-fuchsia-500/20 resize-none pr-24 rounded-xl transition-all"
                                     rows={1}
                                 />
                                 <div className="absolute right-3 bottom-3 flex items-center gap-2">
-                                    <kbd className="hidden sm:inline-flex items-center px-2 py-1 text-xs text-zinc-400 bg-zinc-800/50 border border-zinc-700/50 rounded shadow-sm">
-                                        ⌘↵
+                                    <kbd className="hidden sm:inline-flex items-center px-2 py-1 text-xs text-zinc-400 bg-white/5 border border-white/10 rounded shadow-sm">
+                                        ↵ send &nbsp;·&nbsp; ⇧↵ newline
                                     </kbd>
                                 </div>
                             </div>
                             <Button
                                 type="submit"
                                 disabled={isLoading || !input.trim()}
-                                className="h-12 px-5 bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white border-0 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-blue-500/25"
+                                className="h-12 px-5 border-0 text-white bg-linear-to-r from-violet-600 via-fuchsia-600 to-cyan-500 hover:from-violet-500 hover:via-fuchsia-500 hover:to-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-fuchsia-500/30"
                             >
                                 {isLoading ? (
                                     <Loader2 className="h-5 w-5 animate-spin" />
