@@ -150,7 +150,7 @@ async function generateSuggestion(prompt: string): Promise<string> {
                     Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
                 },
                 body: JSON.stringify({
-                    model: "llama-3.1-8b-instant",
+                    model: "qwen/qwen3.8-27b",
                     messages: [
                         {
                             role: "system",
