@@ -213,7 +213,9 @@ function detectLanguage(content: string, fileName?: string): string {
     // Content-based detection
     if (content.includes("interface ") || content.includes(": string"))
         return "TypeScript";
-    if (content.includes("def ") || content.includes("import ")) return "Python";
+    if (/\bimport\s+.*\bfrom\s+['"]/.test(content) || /\bconst\s+\w+\s*=|=>/.test(content))
+        return "JavaScript";
+    if (content.includes("def ") || /^\s*import\s+\w+/m.test(content)) return "Python";
     if (content.includes("func ") || content.includes("package ")) return "Go";
 
     return "JavaScript";
@@ -252,7 +254,7 @@ function detectInClass(lines: string[], currentLine: number): boolean {
 
 function detectAfterComment(line: string, column: number): boolean {
     const beforeCursor = line.substring(0, column);
-    return /\/\/.*$/.test(beforeCursor) || /#.*$/.test(beforeCursor);
+    return /(?<!:)\/\/.*$/.test(beforeCursor) || /#.*$/.test(beforeCursor);
 }
 
 function detectIncompletePatterns(line: string, column: number): string[] {
